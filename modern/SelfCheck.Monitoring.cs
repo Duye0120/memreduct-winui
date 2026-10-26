@@ -22,10 +22,9 @@ public sealed partial class MainWindow
         var retainedValue = PhysicalValue.Text;
         SetSamplingState(true);
         Require(PhysicalValue.Text == retainedValue && PressureText.Text == UiText.Get("LastReading")
-            && HistoryEnd.Text == UiText.Get("LastReading")
             && Equals(ToolTipService.GetToolTip(LiveLabel), UiText.Get("LastReadingTime", _lastReadUtc.Value.ToLocalTime()))
             && Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(LiveLabel) == ToolTipService.GetToolTip(LiveLabel)?.ToString(),
-            "Retained readings identify their last successful time and do not label a stale graph endpoint as now");
+            "Retained readings identify their last successful time without advertising live data");
         Layout(700, 780, 1);
         await WritePreview(directory, "sampling-failure-light.png");
         Shell.RequestedTheme = ElementTheme.Dark;
@@ -48,9 +47,9 @@ public sealed partial class MainWindow
             "Successful read-only sampling restores live data without dismissing an unrelated error");
         ReportSamplingFailure(new InvalidOperationException("Self-check fixture: second sampling interruption."));
         Sample();
-        Require(!_sampleFailed && !IssueBanner.IsOpen && HistoryEnd.Text == UiText.Get("HistoryEnd.Text")
+        Require(!_sampleFailed && !IssueBanner.IsOpen
             && ToolTipService.GetToolTip(LiveLabel) is null
             && Microsoft.UI.Xaml.Automation.AutomationProperties.GetHelpText(LiveLabel) == "",
-            "Recovery clears its own error, stale timestamp and unavailable endpoint");
+            "Recovery clears its own error and stale timestamp");
     }
 }

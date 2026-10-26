@@ -34,6 +34,8 @@ public sealed partial class MainWindow
             var english = UiText.LanguageTag == "en-US";
             Require(SettingsPage is null,
                 "Startup leaves the settings control tree uncreated");
+            await CheckStartupUpdatesAsync();
+            checks.Add("Startup update checks default on for old profiles, run once without loading settings, tolerate offline failures, and stop on disable or exit.");
             var initialGameMode = _settings.GameMode;
             var initialConfirmation = _settings.ConfirmCleanup;
             SetGameMode(!initialGameMode);
@@ -84,14 +86,14 @@ public sealed partial class MainWindow
             PrepareToExit();
             Require(_exitRequested && !_ready && _updateCancellation.IsCancellationRequested,
                 "Every real-close path cancels pending work and disables callbacks; preparation is idempotent");
-            var initialSamples = _history.Samples.Count;
+            var initialReading = _lastReadUtc;
             Sample();
             await CheckUpdateAsync();
             var initialIssue = IssueBanner.Title;
             var initialInputWidth = SettingsPage.ThresholdNumber.Width;
             ReflowMetrics(560, 2);
             ReportIssue("Late failure", "Must not replace the closed window's banner");
-            Require(_history.Samples.Count == initialSamples && !_updateBusy && IssueBanner.Title == initialIssue
+            Require(_lastReadUtc == initialReading && !_updateBusy && IssueBanner.Title == initialIssue
                 && SettingsPage.ThresholdNumber.Width == initialInputWidth,
                 "Closing windows do not enqueue new sampling or update work");
             _updateCancellation.Dispose();
@@ -100,6 +102,12 @@ public sealed partial class MainWindow
             _ready = initialReady;
             checks.Add("Canceled release checks and closing-window guards stop late work; developer checks cannot invoke native cleanup.");
             Require(SettingsPage.UpdateButton.Content?.ToString() == (english ? "Check for updates" : "检查更新"), "Update controls are translated");
+            Require(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(SettingsPage.AutoUpdateSwitch)
+                == (english ? "Check for updates on startup" : "启动时检查更新"), "Startup update controls are translated and accessible");
+            SettingsPage.AutoUpdateSwitch.IsOn = false;
+            Require(!_settings.CheckUpdatesOnStartup, "The startup update switch saves the disabled preference");
+            SettingsPage.AutoUpdateSwitch.IsOn = true;
+            Require(_settings.CheckUpdatesOnStartup, "The startup update switch restores the enabled preference");
             checks.Add("Installed-path/ACL boundaries, task XML, non-overwriting settings import, release filtering, download-source and SHA-256 checks passed without creating tasks, downloading or installing anything.");
             Require(SettingsTab.Content?.ToString() == (english ? "Settings" : "设置"), "XAML loads the selected language");
             Require(SettingsPage.WorkingSetCheck.Content?.ToString() == (english ? "Process working sets" : "进程工作集"), "Settings controls are translated");
@@ -155,7 +163,7 @@ public sealed partial class MainWindow
             var buttonRadiusPixels = CleanButton.CornerRadius.TopLeft * displayScale;
             Require(Math.Abs(buttonRadiusPixels - 10) < 0.01,
                 $"Button radius must be 10 screen pixels; actual={buttonRadiusPixels}, scale={displayScale}");
-            foreach (var card in new[] { MetricsCard, HistoryCard, CleanupHistoryCard, CleanCard, SettingsPage.AppearanceCard, SettingsPage.CleanupSettingsCard, SettingsPage.AutoSettingsCard, SettingsPage.AboutCard })
+            foreach (var card in new[] { MetricsCard, CleanupHistoryCard, CleanCard, SettingsPage.AppearanceCard, SettingsPage.CleanupSettingsCard, SettingsPage.AutoSettingsCard, SettingsPage.AboutCard })
                 Require(Math.Abs(card.CornerRadius.TopLeft * displayScale - 12) < 0.01, "All grouping cards have 12 screen-pixel radii");
             foreach (var control in new Control[] { OverviewTab, SettingsTab, SidebarOverviewTab, SidebarSettingsTab, PaneToggleButton,
                 ElevateButton, SettingsPage.ThemeChoice, SettingsPage.LanguageChoice, SettingsPage.ThresholdNumber, SettingsPage.IntervalNumber, SettingsPage.SourceLink, SettingsPage.ExitButton, SettingsPage.UpdateButton, SettingsPage.ReleasesLink })
@@ -179,20 +187,6 @@ public sealed partial class MainWindow
             Require(memory.PhysicalTotal > 0 && memory.PhysicalAvailable <= memory.PhysicalTotal, "Live physical memory");
             Require(memory.CommitLimit > 0 && memory.CommitUsed <= memory.CommitLimit, "Live commit memory");
             checks.Add("Read-only native memory sampling and x64 ABI passed.");
-            var history = new MemoryHistory();
-            var historyStart = DateTimeOffset.UtcNow;
-            for (var second = 0; second <= 600; second++) history.Record(memory, historyStart.AddSeconds(second));
-            Require(history.Samples.Count == MemoryHistory.Capacity && history.Samples.First().Time == historyStart.AddSeconds(300),
-                "History keeps only five minutes with bounded storage");
-            history.Record(memory, historyStart.AddMinutes(20));
-            Require(history.Samples.Count == 1, "Resuming after sleep discards stale history");
-            history.Record(memory, historyStart);
-            Require(history.Samples.Count == 1 && history.Samples.First().Time == historyStart, "A backward clock change starts a new history");
-            Require(MemoryHistory.Position(historyStart, historyStart.AddMinutes(5), 100) == 0
-                && MemoryHistory.Position(historyStart.AddMinutes(5), historyStart.AddMinutes(5), 100) == 100
-                && MemoryHistory.Position(historyStart, historyStart.AddMinutes(10), 100) == 0,
-                "History uses a fixed five-minute time axis");
-            checks.Add("Memory history stays within 301 samples, expires stale data, handles clock changes and uses a fixed time axis.");
             var options = new AppSettings { Threshold = 500, IntervalMinutes = -1, Theme = "unknown" };
             options.Normalize();
             Require(options.Threshold == 99 && options.IntervalMinutes == 1 && options.Theme == "System", "Configuration bounds");
@@ -702,63 +696,34 @@ public sealed partial class MainWindow
             await WritePreview(directory, "memory-light.png");
             await CheckMetricsAnimationAsync();
             checks.Add("Cleanup numbers and bars animate together, restore latest real readings, handle fast completion and stop safely on sampling failure.");
-            // Synthetic samples exist only in the developer self-check, never in a normal session.
-            for (var second = 0; second <= 300; second++)
-            {
-                if (second > 150 && second < 170) continue;
-                var usage = 50 + (int)(12 * Math.Sin(second / 35.0)) + (second < 220 ? 12 : 0);
-                _history.Record(new MemorySnapshot(100, (ulong)(100 - usage), 40, 100, 5, 10), historyStart.AddSeconds(second));
-            }
-            RenderHistory();
-            Require(PhysicalHistoryPath.Data is PathGeometry plot && plot.Figures.Count == 2,
-                "Missing sampling intervals are displayed as gaps");
-            Require(HistoryEmpty.Visibility == Visibility.Collapsed, "Populated history replaces the empty state");
-            var cachedPlot = PhysicalHistoryPath.Data;
+            Require(!Descendants(Shell).OfType<FrameworkElement>().Any(x => x.Name == "HistoryCard" || x.Name == "HistoryPlot"),
+                "The overview no longer creates trend controls or plot geometry");
+            var cachedValue = PhysicalValue.Text;
             AppWindow.Hide();
-            Sample(); RenderHistory();
-            Require(!CanRenderWindow && ReferenceEquals(cachedPlot, PhysicalHistoryPath.Data),
-                "Hidden tray windows retain samples without preparing chart geometry");
+            Sample();
+            Require(!CanRenderWindow && PhysicalValue.Text == cachedValue,
+                "Hidden tray windows keep monitoring without refreshing metric controls");
             AppWindow.Show(false);
             var windowPresenter = (Microsoft.UI.Windowing.OverlappedPresenter)AppWindow.Presenter;
             windowPresenter.Minimize();
             await Task.Delay(100);
-            cachedPlot = PhysicalHistoryPath.Data;
-            Sample(); RenderHistory();
+            cachedValue = PhysicalValue.Text;
+            Sample();
             Require(windowPresenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Minimized
-                && !CanRenderWindow && ReferenceEquals(cachedPlot, PhysicalHistoryPath.Data),
-                "Minimized windows do not redraw the chart even when the native window is visible");
+                && !CanRenderWindow && PhysicalValue.Text == cachedValue,
+                "Minimized windows do not refresh metric controls");
             windowPresenter.Restore(false);
             Layout(700, 560, 1);
             await Task.Delay(150);
-            BodyScroll.ChangeView(null, BodyScroll.ScrollableHeight, null, true);
-            for (var retry = 0; retry < 10 && _historyInViewport; retry++) await Task.Delay(50);
-            cachedPlot = PhysicalHistoryPath.Data;
-            RenderHistory();
-            Require(!_historyInViewport && ReferenceEquals(cachedPlot, PhysicalHistoryPath.Data),
-                "Charts scrolled outside the viewport do not allocate replacement geometry");
-            BodyScroll.ChangeView(null, 0, null, true);
-            for (var retry = 0; retry < 10 && !_historyInViewport; retry++) await Task.Delay(50);
-            Require(_historyInViewport && CanRenderWindow && !ReferenceEquals(cachedPlot, PhysicalHistoryPath.Data),
-                "Bringing the chart back into view refreshes its cached geometry");
-            checks.Add("Hidden, minimized and scrolled-away charts skip geometry work; returning to the viewport refreshes immediately without losing samples.");
+            checks.Add("The overview has no trend controls; hidden and minimized windows keep monitoring without updating metric controls.");
             var samplingWatch = System.Diagnostics.Stopwatch.StartNew();
             for (var sample = 0; sample < 100; sample++) _ = MemoryEngine.Read();
             samplingWatch.Stop();
-            var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
-            var geometryWatch = System.Diagnostics.Stopwatch.StartNew();
-            for (var frame = 0; frame < 100; frame++) RenderHistory();
-            geometryWatch.Stop();
             File.WriteAllText(Path.Combine(directory, "performance-check.json"), JsonSerializer.Serialize(new
             {
                 sampleMillisecondsPerCall = samplingWatch.Elapsed.TotalMilliseconds / 100,
-                geometryMillisecondsPerFrame = geometryWatch.Elapsed.TotalMilliseconds / 100,
-                managedBytesPerGeometryFrame = (GC.GetAllocatedBytesForCurrentThread() - allocatedBefore) / 100,
-                historySamples = _history.Samples.Count,
-                scope = "Read-only sampling and populated graph geometry preparation; excludes compositor time and is not an idle-process benchmark."
+                scope = "Read-only sampling only; no trend storage or geometry remains. This is not an idle-process or startup benchmark."
             }, new JsonSerializerOptions { WriteIndented = true }));
-            Layout(700, 760, 1);
-            await WritePreview(directory, "memory-history-fixture.png");
-            await WritePreview(directory, "history-fixture.png", HistoryCard);
             SelectPage(true); Layout(700, 1600, 1);
             await WritePreview(directory, "settings-expanded.png");
             SettingsPage.AdvancedCleanup.IsExpanded = false;
@@ -824,6 +789,7 @@ public sealed partial class MainWindow
             Shell.RequestedTheme = ElementTheme.Dark;
             _settings.SidebarExpanded = false;
             SelectPage(false); Layout(700, 520, 1);
+            await CheckUpdateNoticeAsync(directory);
             await WritePreview(directory, "memory-dark.png");
             File.WriteAllText(Path.Combine(directory, "self-check.json"), JsonSerializer.Serialize(new
             { passed = true, language = UiText.LanguageTag, checks, layouts, displayScale, cardRadiusPixels = MetricsCard.CornerRadius.TopLeft * displayScale,

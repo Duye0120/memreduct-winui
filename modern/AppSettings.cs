@@ -13,6 +13,7 @@ public sealed class AppSettings
     public bool ConfirmCleanup { get; set; } = true;
     public bool TrayCleanupHintShown { get; set; }
     public bool NotifyAfterCleanup { get; set; }
+    public bool CheckUpdatesOnStartup { get; set; } = true;
     public bool CleanWorkingSets { get; set; } = true;
     public bool CleanSystemCache { get; set; } = true;
     public bool CleanLowPriorityStandby { get; set; } = true;

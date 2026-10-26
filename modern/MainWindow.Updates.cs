@@ -9,6 +9,53 @@ public sealed partial class MainWindow
     private bool _updateBusy;
     private string? _downloadedInstaller;
     private CancellationTokenSource? _updateCancellation;
+    private bool _startupUpdateChecked;
+    private string? _startupUpdateStatus;
+    private CancellationTokenSource? _startupUpdateCancellation;
+
+    private async Task CheckStartupUpdateAsync(Func<CancellationToken, Task<AppRelease?>> check)
+    {
+        if (_exitRequested || _startupUpdateChecked || !_settings.CheckUpdatesOnStartup) return;
+        _startupUpdateChecked = true;
+        if (_updateBusy) return;
+        using var cancellation = new CancellationTokenSource();
+        _startupUpdateCancellation = cancellation;
+        try
+        {
+            var release = await check(cancellation.Token);
+            if (_exitRequested || cancellation.IsCancellationRequested || !_settings.CheckUpdatesOnStartup || _updateBusy) return;
+            _startupUpdateStatus = release is null ? UiText.Get("UpdateNone") : UiText.Get("UpdateAvailable", release.Version);
+            if (SettingsPage is not null) SettingsPage.UpdateStatus.Text = _startupUpdateStatus;
+            if (release is not null)
+            {
+                UpdateNotice.Title = _startupUpdateStatus;
+                UpdateNotice.Visibility = Visibility.Visible;
+                UpdateNotice.IsOpen = true;
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        catch (Exception)
+        {
+            // Startup checks stay quiet offline; the manual update action retains detailed errors.
+            if (_exitRequested || cancellation.IsCancellationRequested || _updateBusy) return;
+            _startupUpdateStatus = UiText.Get("UpdateFailed");
+            if (SettingsPage is not null) SettingsPage.UpdateStatus.Text = _startupUpdateStatus;
+        }
+        finally { _startupUpdateCancellation = null; }
+    }
+
+    private void UpdateDetails_Click(object sender, RoutedEventArgs args)
+    {
+        if (_exitRequested) return;
+        UpdateNotice.IsOpen = false;
+        UpdateNotice.Visibility = Visibility.Collapsed;
+        SelectPage(true);
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!_exitRequested && SettingsHost.Visibility == Visibility.Visible)
+                SettingsPage.UpdateButton.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false });
+        });
+    }
 
     private async void Update_Click(object sender, RoutedEventArgs args)
     {
@@ -24,6 +71,8 @@ public sealed partial class MainWindow
     private async Task CheckUpdateAsync()
     {
         if (_exitRequested || _checking || _cleaning || _restartPromptOpen || _elevating || _updateBusy) return;
+        _startupUpdateChecked = true;
+        _startupUpdateCancellation?.Cancel();
         _updateBusy = true;
         _updateCancellation = new CancellationTokenSource();
         SettingsPage.UpdateButton.IsEnabled = false;

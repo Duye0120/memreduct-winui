@@ -77,6 +77,11 @@
                 <ScrollViewer x:Name="NotificationScroll" Grid.Row="1" Grid.ColumnSpan="3" MaxHeight="200" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <InfoBar x:Name="IssueBanner" IsOpen="False" Visibility="Collapsed" IsClosable="True" Severity="Warning" Margin="0,12,0,0" CornerRadius="{StaticResource CardCornerRadius}" />
+                        <InfoBar x:Name="UpdateNotice" IsOpen="False" Visibility="Collapsed" IsClosable="True" Severity="Informational" Margin="0,12,0,0" CornerRadius="{StaticResource CardCornerRadius}">
+                            <InfoBar.ActionButton>
+                                <Button x:Uid="UpdateDetailsButton" Content="查看更新" Click="UpdateDetails_Click" CornerRadius="{StaticResource AppControlCornerRadius}" />
+                            </InfoBar.ActionButton>
+                        </InfoBar>
                         <InfoBar x:Uid="AdminBanner" x:Name="AdminBanner" Title="自动清理已暂停" Message="自动清理需要管理员权限。" IsOpen="False" Visibility="Collapsed" IsClosable="False" Severity="Informational" Margin="0,12,0,0" CornerRadius="{StaticResource CardCornerRadius}">
                             <InfoBar.ActionButton>
                                 <Button x:Uid="ElevateButton" x:Name="ElevateButton" Content="以管理员运行" CornerRadius="{StaticResource AppControlCornerRadius}" Click="Elevate_Click" />
@@ -142,37 +147,6 @@
                             <TextBlock x:Name="ResultText" Text="—" Style="{StaticResource Muted}" />
                             <TextBlock x:Name="AutoStatusText" Text="—" Style="{StaticResource Muted}" />
                         </StackPanel>
-                        <Border x:Name="HistoryCard" Style="{StaticResource Card}" Padding="16,12">
-                            <StackPanel Spacing="10">
-                                <TextBlock x:Uid="HistoryHeading" Text="内存趋势 · 最近 5 分钟" Style="{StaticResource Body}" FontWeight="SemiBold" />
-                                <Grid ColumnSpacing="16">
-                                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
-                                    <TextBlock x:Uid="HistoryPhysicalLegend" Text="实线 · 物理内存" Style="{StaticResource Muted}" />
-                                    <TextBlock Grid.Column="1" x:Uid="HistoryCommitLegend" Text="虚线 · 已提交内存" Style="{StaticResource Muted}" />
-                                </Grid>
-                                <Grid ColumnSpacing="8">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition /></Grid.ColumnDefinitions>
-                                    <Grid Height="112">
-                                        <TextBlock Text="100%" Style="{StaticResource Muted}" FontSize="10" VerticalAlignment="Top" />
-                                        <TextBlock Text="50%" Style="{StaticResource Muted}" FontSize="10" VerticalAlignment="Center" />
-                                        <TextBlock Text="0%" Style="{StaticResource Muted}" FontSize="10" VerticalAlignment="Bottom" />
-                                    </Grid>
-                                    <Grid x:Name="HistoryPlot" Grid.Column="1" Height="112" SizeChanged="HistoryPlot_SizeChanged" EffectiveViewportChanged="HistoryPlot_ViewportChanged" AutomationProperties.Name="内存趋势">
-                                        <Border BorderBrush="{ThemeResource OutlineBrush}" BorderThickness="0,1,0,1" Opacity="0.55" />
-                                        <Border Height="1" Background="{ThemeResource OutlineBrush}" VerticalAlignment="Center" Opacity="0.55" />
-                                        <Path x:Name="CommitHistoryPath" Stroke="{ThemeResource MutedBrush}" StrokeThickness="1.5" StrokeDashArray="3,3" />
-                                        <Path x:Name="PhysicalHistoryPath" Stroke="{ThemeResource AccentBrush}" StrokeThickness="2" StrokeLineJoin="Round" />
-                                        <TextBlock x:Name="HistoryEmpty" x:Uid="HistoryEmpty" Text="正在收集数据…" Style="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Grid>
-                                </Grid>
-                                <Grid>
-                                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
-                                    <TextBlock x:Uid="HistoryStart" Text="5 分钟前" Style="{StaticResource Muted}" />
-                                    <TextBlock x:Name="HistoryEnd" x:Uid="HistoryEnd" Grid.Column="1" Text="现在" Style="{StaticResource Muted}" HorizontalAlignment="Right" />
-                                </Grid>
-                                <TextBlock x:Name="HistorySummary" Text="—" Style="{StaticResource Muted}" />
-                            </StackPanel>
-                        </Border>
                         <Border x:Name="CleanupHistoryCard" Style="{StaticResource Card}" BorderThickness="0" Visibility="Collapsed">
                             <Expander x:Name="CleanupHistoryExpander" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="{ThemeResource SurfaceBrush}" BorderBrush="{ThemeResource OutlineBrush}">
                                 <Expander.Header>

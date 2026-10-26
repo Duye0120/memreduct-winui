@@ -97,7 +97,7 @@ pwsh -File .\modern\build-installer.ps1 -Compiler 'D:\apps\Inno Setup 7\ISCC.exe
 
 空分类省略，中英文逐项对应。每条优先用一句话说明用户可感知的变化，只列实际完成的内容，不直接粘贴提交信息。内部实现、自检数量、CI 与详细验收证据保留在开发文档；必要的安装说明或已知限制可在更新日志后简短补充。
 
-更新只在用户点击时检查，不轮询、不后台静默安装。便携版提供发布页入口；安装版确认后在当前进程后台下载到 `%LOCALAPPDATA%\MemReductFluent\Updates\update.exe`，期间不提权、不重启。来源固定为本人仓库的精确资产地址，重定向只允许 HTTPS GitHub 下载域，下载校验大小及 SHA-256。
+默认每次进程启动后台检查一次更新，可在“设置 → 关于”关闭；手动检查入口继续保留。不轮询、不自动下载或静默安装，离线不弹模态窗口。便携版提供发布页入口；安装版确认后在当前进程后台下载到 `%LOCALAPPDATA%\MemReductFluent\Updates\update.exe`，期间不提权、不重启。来源固定为本人仓库的精确资产地址，重定向只允许 HTTPS GitHub 下载域，下载校验大小及 SHA-256。
 
 点击「安装更新」才通过 UAC 启动固定的 `Program Files\MemReduct Helper\MemReduct.Helper.exe --install-update <SID>`。助手不创建主窗口、托盘或实例互斥量，不读写设置；重新读取 GitHub 正式发布元数据，以当前账户普通令牌打开用户缓存，将其复制到受保护的 `Program Files\MemReduct Helper\Updates\update.exe`，再次校验大小和 SHA-256，再启动安装器。目标目录仅来自 HKLM 卸载项，通过 `/DIR` 保留，UI 不向助手传递路径、URL、哈希或命令。用户缓存从不直接执行。原进程仅在助手成功后退出；取消 UAC 则保持运行和可重试状态，验证失败恢复检查更新入口。两处缓存均复用固定文件名。
 

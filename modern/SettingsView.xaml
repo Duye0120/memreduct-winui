@@ -189,6 +189,11 @@
             <TextBlock x:Uid="AboutHeading" Style="{StaticResource Muted}" Text="关于" />
             <Border x:Name="AboutCard" x:FieldModifier="public" Style="{StaticResource Card}">
                 <StackPanel>
+                    <Grid Style="{StaticResource SettingRow}">
+                        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <TextBlock x:Uid="AutoUpdateLabel" Text="启动时检查更新" Style="{StaticResource Body}" VerticalAlignment="Center" />
+                        <ToggleSwitch x:Uid="AutoUpdateSwitch" x:Name="AutoUpdateSwitch" x:FieldModifier="public" Grid.Column="1" MinWidth="0" OnContent="" OffContent="" VerticalAlignment="Center" AutomationProperties.Name="启动时检查更新" />
+                    </Grid>
                     <Grid x:Name="AboutUpdateRow" x:FieldModifier="public" Style="{StaticResource SettingRow}" RowSpacing="{StaticResource Space12}">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>

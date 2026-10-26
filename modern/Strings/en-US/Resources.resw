@@ -343,18 +343,14 @@
   </data>
   <data name="UpdateStatus.Text" xml:space="preserve"><value>Check GitHub for a new version.</value></data>
   <data name="StartupResumeFailed" xml:space="preserve"><value>The authorized startup task could not be reused. The app opened normally; you can still authorize cleanup manually.</value></data>
-  <data name="HistoryHeading.Text" xml:space="preserve"><value>Memory trend · Last 5 minutes</value></data>
-  <data name="HistoryPhysicalLegend.Text" xml:space="preserve"><value>Solid · Physical memory</value></data>
-  <data name="HistoryCommitLegend.Text" xml:space="preserve"><value>Dashed · Committed memory</value></data>
-  <data name="HistoryEmpty.Text" xml:space="preserve"><value>Collecting samples…</value></data>
-  <data name="HistoryStart.Text" xml:space="preserve"><value>5 minutes ago</value></data>
-  <data name="HistoryEnd.Text" xml:space="preserve"><value>Now</value></data>
+  <data name="AutoUpdateLabel.Text" xml:space="preserve"><value>Check for updates on startup</value></data>
+  <data name="AutoUpdateSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Check for updates on startup</value></data>
+  <data name="UpdateDetailsButton.Content" xml:space="preserve"><value>View update</value></data>
   <data name="MonitoringUnavailable" xml:space="preserve"><value>Unavailable</value></data>
   <data name="LastReading" xml:space="preserve"><value>Last reading</value></data>
   <data name="LastReadingTime" xml:space="preserve"><value>Last reading: {0:HH:mm:ss}</value></data>
   <data name="NoReading" xml:space="preserve"><value>No reading yet</value></data>
   <data name="TrayUsageUnavailable" xml:space="preserve"><value>Memory usage unavailable</value></data>
-  <data name="HistorySummary" xml:space="preserve"><value>Physical range {0:0.0}%–{1:0.0}% · Current session only</value></data>
   <data name="PressureNormal" xml:space="preserve"><value>Normal usage</value></data>
   <data name="PressureElevated" xml:space="preserve"><value>Elevated usage</value></data>
   <data name="PressureHigh" xml:space="preserve"><value>High usage</value></data>

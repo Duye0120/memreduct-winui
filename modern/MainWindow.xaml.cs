@@ -53,6 +53,7 @@ public sealed partial class MainWindow : Window
         if (checking) Title = "Mem Reduct Fluent - Self-check";
         Shell.Language = UiText.LanguageTag;
         IssueBanner.Closed += (_, _) => IssueBanner.Visibility = Visibility.Collapsed;
+        UpdateNotice.Closed += (_, _) => UpdateNotice.Visibility = Visibility.Collapsed;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
@@ -116,6 +117,8 @@ public sealed partial class MainWindow : Window
             Shell.XamlRoot.Changed += XamlRoot_Changed;
             await RunStartupCleanupAsync();
         };
+        if (!checking) DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low,
+            () => _ = CheckStartupUpdateAsync(UpdateService.CheckAsync));
     }
 
     private void EnsureSettingsLoaded()
@@ -150,6 +153,7 @@ public sealed partial class MainWindow : Window
             SettingsPage.IntervalNumber.LostFocus += AutoNumber_LostFocus;
             SettingsPage.IntervalSwitch.Toggled += Preference_Toggled;
             SettingsPage.UpdateButton.Click += Update_Click;
+            SettingsPage.AutoUpdateSwitch.Toggled += Preference_Toggled;
             SettingsPage.ExitButton.Click += Exit_Click;
             LoadSettings();
             _cornerScale = 0;
@@ -171,6 +175,8 @@ public sealed partial class MainWindow : Window
         SettingsPage.TraySwitch.IsOn = _settings.CloseToTray;
         SettingsPage.ConfirmSwitch.IsOn = _settings.ConfirmCleanup;
         SettingsPage.NotifyCleanupSwitch.IsOn = _settings.NotifyAfterCleanup;
+        SettingsPage.AutoUpdateSwitch.IsOn = _settings.CheckUpdatesOnStartup;
+        if (_startupUpdateStatus is not null) SettingsPage.UpdateStatus.Text = _startupUpdateStatus;
         SettingsPage.WorkingSetCheck.IsChecked = _settings.CleanWorkingSets;
         SettingsPage.SystemCacheCheck.IsChecked = _settings.CleanSystemCache;
         SettingsPage.StandbyCheck.IsChecked = _settings.CleanLowPriorityStandby;
@@ -227,9 +233,9 @@ public sealed partial class MainWindow : Window
         // The requested radii are screen pixels, while WinUI measures CornerRadius in DIPs.
         var cardRadius = new CornerRadius(12 / scale);
         var controlRadius = new CornerRadius(10 / scale);
-        foreach (var card in new[] { MetricsCard, HistoryCard, CleanupHistoryCard, CleanCard, SettingsPage?.AppearanceCard, SettingsPage?.CleanupSettingsCard, SettingsPage?.AutoSettingsCard, SettingsPage?.AboutCard })
+        foreach (var card in new[] { MetricsCard, CleanupHistoryCard, CleanCard, SettingsPage?.AppearanceCard, SettingsPage?.CleanupSettingsCard, SettingsPage?.AutoSettingsCard, SettingsPage?.AboutCard })
             if (card is not null) card.CornerRadius = cardRadius;
-        IssueBanner.CornerRadius = AdminBanner.CornerRadius = cardRadius;
+        IssueBanner.CornerRadius = AdminBanner.CornerRadius = UpdateNotice.CornerRadius = cardRadius;
         CleanupHistoryExpander.CornerRadius = cardRadius;
         foreach (var control in new Control?[] { OverviewTab, SettingsTab, SidebarOverviewTab, SidebarSettingsTab, PaneToggleButton,
             CleanButton, ElevateButton, SettingsPage?.ThemeChoice, SettingsPage?.LanguageChoice,
@@ -330,10 +336,9 @@ public sealed partial class MainWindow : Window
             UpdateGameProtection(_settings.GameMode && GameModeMonitor.IsFullscreenApp(), DateTimeOffset.UtcNow);
             var snapshot = MemoryEngine.Read();
             _lastReadUtc = DateTimeOffset.UtcNow;
-            _history.Record(snapshot, _lastReadUtc.Value);
             _lastPercent = snapshot.PhysicalPercent;
             ObserveThresholdRetry(snapshot.PhysicalPercent, DateTimeOffset.UtcNow);
-            if (CanRenderWindow) { UpdateStats(snapshot); RenderHistory(); }
+            if (CanRenderWindow) UpdateStats(snapshot);
             SetSamplingState(false);
             UpdateTraySafely();
             if (!_checking && Installation.IsInstalled && !_helperProbeBusy && !_cleaning && !_elevating && DateTimeOffset.UtcNow >= _nextHelperProbe)
@@ -364,7 +369,6 @@ public sealed partial class MainWindow : Window
         if (wasFailed != failed)
         {
             SetText(LiveLabel, UiText.Get(failed ? "MonitoringUnavailable" : "LiveLabel.Text"));
-            SetText(HistoryEmpty, UiText.Get(failed ? "MonitoringUnavailable" : "HistoryEmpty.Text"));
         }
         var color = GetStatusColor(0, failed ? CleanupFeedback.Failed : CleanupFeedback.None);
         if (LiveIndicator.Fill is not Microsoft.UI.Xaml.Media.SolidColorBrush brush || brush.Color != color)
@@ -374,7 +378,6 @@ public sealed partial class MainWindow : Window
             if (_lastReadUtc is not null) UpdatePhysicalColor(_lastPercent);
             var label = UiText.Get(_lastReadUtc is null ? "NoReading" : "LastReading");
             SetText(PressureText, label);
-            SetText(HistoryEnd, label);
             PressureText.Foreground = LiveIndicator.Fill;
             var hint = _lastReadUtc is { } time ? UiText.Get("LastReadingTime", time.ToLocalTime()) : UiText.Get("NoReading");
             ToolTipService.SetToolTip(LiveLabel, hint);
@@ -382,7 +385,6 @@ public sealed partial class MainWindow : Window
         }
         else if (wasFailed)
         {
-            SetText(HistoryEnd, UiText.Get("HistoryEnd.Text"));
             ToolTipService.SetToolTip(LiveLabel, null);
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetHelpText(LiveLabel, "");
             if (IssueBanner.Title == UiText.Get("SampleFailed")) IssueBanner.IsOpen = false;
@@ -517,7 +519,6 @@ public sealed partial class MainWindow : Window
             ? (settings ? SidebarSettingsTab : SidebarOverviewTab) : (settings ? SettingsTab : OverviewTab);
         selectedTab.Focus(FocusState.Programmatic);
         Shell.UpdateLayout();
-        if (!settings) RenderHistory();
         BodyScroll.ChangeView(null, 0, null, true);
         // Let pending focus/extent changes settle before resetting the shared scroll viewer.
         DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
@@ -589,6 +590,8 @@ public sealed partial class MainWindow : Window
         _settings.AlwaysOnTop = SettingsPage.PinSwitch.IsOn;
         _settings.CloseToTray = SettingsPage.TraySwitch.IsOn;
         _settings.NotifyAfterCleanup = SettingsPage.NotifyCleanupSwitch.IsOn;
+        _settings.CheckUpdatesOnStartup = SettingsPage.AutoUpdateSwitch.IsOn;
+        if (!_settings.CheckUpdatesOnStartup) _startupUpdateCancellation?.Cancel();
         if (_settings.AutoThreshold != SettingsPage.ThresholdSwitch.IsOn) _thresholdRetryAfter = default;
         _settings.AutoThreshold = SettingsPage.ThresholdSwitch.IsOn;
         _settings.AutoInterval = SettingsPage.IntervalSwitch.IsOn;
@@ -910,7 +913,7 @@ public sealed partial class MainWindow : Window
     private void PrepareToExit()
     {
         if (_exitRequested) return;
-        _exitRequested = true; _ready = false; _updateCancellation?.Cancel();
+        _exitRequested = true; _ready = false; _updateCancellation?.Cancel(); _startupUpdateCancellation?.Cancel();
     }
     internal void ExitWindow() { PrepareToExit(); Close(); }
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
