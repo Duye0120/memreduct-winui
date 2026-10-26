@@ -58,6 +58,13 @@ New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
 $installer = Join-Path $OutputDirectory "MemReductFluent-$version-win-x64-setup.exe"
 if (!(Test-Path -LiteralPath $installer -PathType Leaf)) { throw 'Installer output missing.' }
+$metadata = [Diagnostics.FileVersionInfo]::GetVersionInfo($installer)
+$expectedVersion = [version]::new($parsed.Major, $parsed.Minor, $parsed.Build, 0)
+$fileVersion = [version]::new($metadata.FileMajorPart, $metadata.FileMinorPart, $metadata.FileBuildPart, $metadata.FilePrivatePart)
+$productVersion = [version]::new($metadata.ProductMajorPart, $metadata.ProductMinorPart, $metadata.ProductBuildPart, $metadata.ProductPrivatePart)
+if ($fileVersion -ne $expectedVersion -or $productVersion -ne $expectedVersion -or $metadata.ProductVersion.Trim() -cne $version) {
+    throw 'Installer file/product version metadata does not match the application version.'
+}
 $hash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content -LiteralPath ($installer + '.sha256') -Value "$hash  $([IO.Path]::GetFileName($installer))" -Encoding utf8NoBOM
 Write-Host "Ready: $installer"

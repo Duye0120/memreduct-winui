@@ -7,6 +7,10 @@
 AppId={{5B9D5C89-F01C-4AB6-A593-DA69B3835832}
 AppName=Mem Reduct Fluent
 AppVersion={#AppVersion}
+VersionInfoVersion={#AppVersion}.0
+VersionInfoTextVersion={#AppVersion}
+VersionInfoProductVersion={#AppVersion}.0
+VersionInfoProductTextVersion={#AppVersion}
 AppPublisher=Duye0120
 AppPublisherURL=https://github.com/Duye0120/memreduct-winui
 AppSupportURL=https://github.com/Duye0120/memreduct-winui/issues
