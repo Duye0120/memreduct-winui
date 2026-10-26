@@ -14,13 +14,17 @@
 
 安装身份读取 HKLM 64 位卸载项 `{5B9D5C89-F01C-4AB6-A593-DA69B3835832}_is1` 的 `InstallLocation`，不读取用户可写的路径标记。设置位置不随安装目录移动。助手目录、文件和祖先必须通过 ACL、所有者及非链接检查；D 盘 UI 的文件不进入清理或更新提权入口。0.0.7 起可写的主程序目录也支持应用内更新；0.0.6 及以下的旧程序需先手动覆盖安装一次修复版。安装器仅收紧自己的固定助手目录，绝不修改 `D:\apps` 或其他父目录 ACL。
 
-### 0.0.11 更新结束重开修复包（本地，未发布）
+### 0.0.11 更新结束重开修复
 
 2026-10-26 用户反馈 0.0.10 应用内更新完成后出现重开失败提示，需手动打开。经两次明确授权的只读管理员诊断，原 `CreateProcessWithTokenW` 路线失败；同一管理员进程中的桌面 Shell 路线成功启动普通权限子进程，子进程确认 `administrator=False`。证据与边界见[开发指南](development.md#更新完成后无法重开0011)，未变更 Windows 登录自启配置。
 
 源码提交 `bd173de95d538610658d25f1b50fda2aa244fae9`。中英文各 31 组功能检查、48 组布局检查及助手自身检查通过；Inno Setup 7.1.0 实编译完整包到 `D:\apps\MemReduct Fluent\MemReductFluent-0.0.11-win-x64-setup.exe`，大小 46,338,288 字节，SHA-256：`960133fa09418877ae363ddfe4a4fa7e00994394653cf04b70f4529f994aaa14`。文件版本和产品版本为 `0.0.11`，校验文件一致。
 
-安装版与便携版设置哈希未变；没有替用户安装、停止主程序或修改助手任务。此包尚未创建标签、推送或发布，现有正式版仍为 0.0.10。完整应用内更新结束后重开 WinUI、以及首次升级在替换旧助手前取消的行为仍需用户验收。构建日志位于仓库外 `work/installer-relaunch-fix-0.0.11.log`，双语待发布说明见 [0.0.11](release-notes-0.0.11.md)。
+随后按用户明确授权，将 D 盘现有安装包及 `.sha256` 直接发布为 [fluent-v0.0.11](https://github.com/Duye0120/memreduct-winui/releases/tag/fluent-v0.0.11)，设为正式最新版；未重新打包或修改旧版附件。标签指向上述源码提交，master 已推送，标签之后的提交仅记录验证与发布结果。
+
+两个附件均上传完成，GitHub 服务端 digest 和大小与本地一致；[更新日志](release-notes-0.0.11.md)完整英文在上、中文在下，服务端正文与本地一致。匿名请求公开 latest API，使用 `MemReductFluent/0.0.10` User-Agent，确认返回正式 0.0.11，精确下载地址、大小和 SHA-256 满足现有更新器契约。
+
+发布前后安装版与便携版设置哈希未变；没有替用户安装、停止主程序或修改助手任务。完整应用内更新结束后重开 WinUI、以及首次升级在替换旧助手前取消的行为仍需用户验收。构建日志位于仓库外 `work/installer-relaunch-fix-0.0.11.log`。
 
 ### 0.0.10 缓存修复与安装包版本信息
 
@@ -133,7 +137,7 @@ pwsh -File .\modern\build-installer.ps1 -Compiler 'D:\apps\Inno Setup 7\ISCC.exe
 
 0.0.9 及更早版本仍使用旧的 LocalAppData 缓存与固定 `update.exe` 名称；已运行的旧版不会因远程发布自动改变存储逻辑，需要先安装修复版一次。受保护临时副本的结束回收由新版助手执行；若首次升级在替换旧助手前取消，旧助手仍保持原行为。设置继续保存在原位置，缓存搬迁不改动设置。
 
-应用内升级要求同一管理员账户，避免读取或启动到另一账户的配置。普通账户需由管理员手动下载安装包完成安装；管理员凭据是 Windows 要求，应用不存储密码。`/FROMAPP=1` 安装结束或取消时，安装器的 `DeinitializeSetup` 只调用一次受保护助手的 `--launch-ui`，后者核对同账户 shell 普通令牌，经 `DuplicateTokenEx` 和 `CreateProcessWithTokenW` 重开 UI；取不到普通令牌则失败，绝不回退管理员启动。普通手动安装保留原有启动勾选项。
+应用内升级要求同一管理员账户，避免读取或启动到另一账户的配置。普通账户需由管理员手动下载安装包完成安装；管理员凭据是 Windows 要求，应用不存储密码。`/FROMAPP=1` 安装结束或取消时，安装器的 `DeinitializeSetup` 只调用一次受保护助手的 `--launch-ui`，后者核对同账户 shell 普通令牌，通过匹配当前桌面 HWND 的 Explorer Shell 自动化接口以普通权限重开 UI；取不到普通令牌或桌面接口则失败，绝不回退管理员启动。普通手动安装保留原有启动勾选项。
 
 实现依据：[Inno Setup 退出事件](https://jrsoftware.org/ishelp/topic_scriptevents.htm)、[通过 Explorer 启动普通权限程序](https://learn.microsoft.com/en-us/windows/win32/shell/samples-execinexplorer)。即使使用 `runasoriginaluser`，已由提权进程启动的安装器也不能保证降权，因此应用内更新改由固定助手校验同账户普通桌面，再由 Explorer 启动。0.0.7–0.0.10 的 `CreateProcessWithTokenW` 重开入口已在用户机器复现“拒绝访问”，0.0.11 改用桌面 Shell，不改变文件访问的普通权限模拟。
 
