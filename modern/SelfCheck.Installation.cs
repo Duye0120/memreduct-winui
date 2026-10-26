@@ -277,16 +277,48 @@ public sealed partial class MainWindow
         Require(rejected && !File.Exists(invalidTarget), "Invalid imported JSON is rejected before writing a profile");
 
         var digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("installer fixture"))).ToLowerInvariant();
-        JsonDocument Release(string tag, string url, string hash, bool prerelease = false, long size = 100, int count = 1) => JsonDocument.Parse(JsonSerializer.Serialize(new
+        JsonDocument Release(string tag, string url, string hash, bool prerelease = false, long size = 100, int count = 1, bool draft = false) => JsonDocument.Parse(JsonSerializer.Serialize(new
         {
-            tag_name = tag, draft = false, prerelease,
-            assets = Enumerable.Repeat(new { name = $"MemReductFluent-{tag.Replace("fluent-v", "")}-win-x64-setup.exe", browser_download_url = url, digest = hash, size }, count).ToArray()
+            tag_name = tag, draft, prerelease,
+            assets = Enumerable.Repeat(new { name = $"MemReductFluent-{tag.Replace("fluent-v", "").TrimStart('v')}-win-x64-setup.exe", browser_download_url = url, digest = hash, size }, count).ToArray()
         }));
         var expected = UpdateService.Repository + "/releases/download/fluent-v0.0.2/MemReductFluent-0.0.2-win-x64-setup.exe";
         using var release = Release("fluent-v0.0.2", expected, "sha256:" + digest);
         Require(UpdateService.ParseRelease(release.RootElement, new Version(0, 0, 1, 0))?.Version == new Version(0, 0, 2), "New stable release is recognized");
         Require(UpdateService.ParseRelease(release.RootElement, new Version(0, 0, 2, 0)) is null, "Same-version reinstall is not offered");
         Require(UpdateService.ParseRelease(release.RootElement, new Version(0, 0, 3, 0)) is null, "Downgrades are not offered");
+        var standardUrl = expected.Replace("/fluent-v", "/v");
+        using var standard = Release("v0.0.2", standardUrl, "sha256:" + digest);
+        Require(UpdateService.ParseRelease(standard.RootElement, new Version(0, 0, 1, 0))?.Download.AbsoluteUri == standardUrl,
+            "Standard v tags retain the exact canonical download URL");
+        foreach (var tag in new[] { "v0.0.2\n", "V0.0.2", "release-v0.0.2" })
+        {
+            using var unsupported = Release(tag, standardUrl, "sha256:" + digest);
+            Require(UpdateService.ParseRelease(unsupported.RootElement, new Version(0, 0, 1, 0)) is null, "Only exact standard and legacy tag formats are accepted");
+        }
+
+        using var nine = Release("v0.0.9", expected.Replace("fluent-v0.0.2", "v0.0.9").Replace("-0.0.2-", "-0.0.9-"), "sha256:" + digest);
+        using var ten = Release("v0.0.10", expected.Replace("fluent-v0.0.2", "v0.0.10").Replace("-0.0.2-", "-0.0.10-"), "sha256:" + digest);
+        var elevenUrl = expected.Replace("fluent-v0.0.2", "v0.0.11").Replace("-0.0.2-", "-0.0.11-");
+        using var eleven = Release("v0.0.11", elevenUrl, "sha256:" + digest);
+        using var bridge = Release("fluent-v0.0.11", elevenUrl.Replace("/v0.0.11/", "/fluent-v0.0.11/"), "sha256:" + digest);
+        using var draftRelease = Release("v0.0.13", "", "", draft: true);
+        using var previewRelease = Release("v0.0.12", "", "", prerelease: true);
+        var manifests = new[] { nine, bridge, eleven, ten, draftRelease, previewRelease }.Select(item => item.RootElement.GetRawText()).ToArray();
+        foreach (var items in new[] { manifests, manifests.Reverse().ToArray() })
+        {
+            var json = "[" + string.Join(",", items) + "]";
+            var latest = UpdatePackage.ParseReleases(json, new Version(0, 0, 8, 0));
+            Require(latest?.Version == new Version(0, 0, 11) && latest.Download.AbsoluteUri == elevenUrl,
+                "Release order and the legacy bridge never override the highest stable version or its standard URL");
+            Require(UpdatePackage.ParseReleases(json, new Version(0, 0, 11, 0)) is null, "Release lists never offer a reinstall or downgrade");
+        }
+        Require(UpdatePackage.ParseReleases("[]", new Version(0, 0, 1, 0)) is null, "An empty release list has no update");
+        using var conflictingBridge = Release("fluent-v0.0.11", elevenUrl.Replace("/v0.0.11/", "/fluent-v0.0.11/"), "sha256:" + new string('0', 64));
+        rejected = false;
+        try { UpdatePackage.ParseReleases("[" + eleven.RootElement.GetRawText() + "," + conflictingBridge.RootElement.GetRawText() + "]", new Version(0, 0, 8, 0)); }
+        catch (InvalidDataException) { rejected = true; }
+        Require(rejected, "Conflicting canonical and legacy installers are rejected");
         foreach (var tag in new[] { "fluent-v1.0.0", "fluent-v1.0.1", "fluent-v1.0.2" })
         {
             using var legacy = Release(tag, expected, "sha256:" + digest);

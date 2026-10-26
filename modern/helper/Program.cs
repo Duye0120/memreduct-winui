@@ -101,6 +101,10 @@ internal static class Program
         var release = UpdatePackage.ParseRelease(json, new Version(0, 0, 1, 0));
         if (release == null || release.Version != new Version(0, 0, 2) || UpdatePackage.ParseRelease(json, new Version(0, 0, 2, 0)) != null)
             throw new Exception("Update manifest contract failed.");
+        var standardJson = json.Replace("fluent-v", "v").Replace("0.0.2", "0.0.11");
+        var listed = UpdatePackage.ParseReleases("[" + json.Replace("0.0.2", "0.0.9") + "," + standardJson + "," + standardJson.Replace("v0.0.11", "fluent-v0.0.11") + "]", new Version(0, 0, 8, 0));
+        if (listed == null || listed.Version != new Version(0, 0, 11) || !listed.Download.AbsoluteUri.Contains("/download/v0.0.11/"))
+            throw new Exception("Standard and legacy release selection failed.");
         var destination = Path.Combine(Path.GetTempPath(), "MemReduct-update-check-" + Guid.NewGuid().ToString("N"));
         try
         {

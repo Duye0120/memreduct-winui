@@ -68,4 +68,4 @@ if ($fileVersion -ne $expectedVersion -or $productVersion -ne $expectedVersion -
 $hash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content -LiteralPath ($installer + '.sha256') -Value "$hash  $([IO.Path]::GetFileName($installer))" -Encoding utf8NoBOM
 Write-Host "Ready: $installer"
-Write-Host "Release tag: fluent-v$version. Nothing has been uploaded or installed."
+Write-Host "Release tag: v$version. Nothing has been uploaded or installed."

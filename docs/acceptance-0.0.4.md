@@ -1,6 +1,6 @@
 # 0.0.4 settings hotfix acceptance
 
-Published on 2026-10-23 as the [latest stable Release](https://github.com/Duye0120/memreduct-winui/releases/tag/fluent-v0.0.4). It includes the preceding 0.0.3 features and preserves Henry++ attribution and GPL terms. The user's installed copy and startup tasks were not replaced or changed.
+Published on 2026-10-23 as the [latest stable Release](https://github.com/Duye0120/memreduct-winui/releases/tag/v0.0.4). It includes the preceding 0.0.3 features and preserves Henry++ attribution and GPL terms. The user's installed copy and startup tasks were not replaced or changed.
 
 ## Identity
 

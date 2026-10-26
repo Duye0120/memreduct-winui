@@ -78,11 +78,11 @@ namespace MemReduct.Fluent
             {
                 client.MaxResponseContentBufferSize = UpdatePackage.MaximumMetadata;
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("MemReductFluent/" + Assembly.GetExecutingAssembly().GetName().Version);
-                using (var response = await client.GetAsync(UpdatePackage.LatestApi, timeout.Token).ConfigureAwait(false))
+                using (var response = await client.GetAsync(UpdatePackage.ReleasesApi, timeout.Token).ConfigureAwait(false))
                 {
                     if (response.StatusCode == HttpStatusCode.NotFound) throw new InvalidOperationException(UiText.Get("UpdateNone"));
                     response.EnsureSuccessStatusCode();
-                    release = UpdatePackage.ParseRelease(await response.Content.ReadAsStringAsync().ConfigureAwait(false),
+                    release = UpdatePackage.ParseReleases(await response.Content.ReadAsStringAsync().ConfigureAwait(false),
                         Assembly.GetExecutingAssembly().GetName().Version);
                 }
             }

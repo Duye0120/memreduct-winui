@@ -28,12 +28,11 @@ internal static class UpdateService
         cancellationToken.ThrowIfCancellationRequested();
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(20));
-        using var response = await Client.GetAsync(UpdatePackage.LatestApi, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+        using var response = await Client.GetAsync(UpdatePackage.ReleasesApi, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
         if (response.StatusCode == HttpStatusCode.NotFound) return null;
         response.EnsureSuccessStatusCode();
         await response.Content.LoadIntoBufferAsync(UpdatePackage.MaximumMetadata, timeout.Token);
-        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
-        return ParseRelease(json.RootElement, CurrentVersion);
+        return UpdatePackage.ParseReleases(await response.Content.ReadAsStringAsync(timeout.Token), CurrentVersion);
     }
 
     internal static AppRelease? ParseRelease(JsonElement json, Version current)

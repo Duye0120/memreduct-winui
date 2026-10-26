@@ -116,7 +116,7 @@ public sealed partial class MainWindow
             Require(!_settings.CheckUpdatesOnStartup, "The startup update switch saves the disabled preference");
             SettingsPage.AutoUpdateSwitch.IsOn = true;
             Require(_settings.CheckUpdatesOnStartup, "The startup update switch restores the enabled preference");
-            checks.Add("Installed-path/ACL boundaries, task XML, non-overwriting settings import, release filtering, download-source and SHA-256 checks passed without creating tasks, downloading or installing anything.");
+            checks.Add("Installed-path/ACL boundaries, task XML, non-overwriting settings import, standard/legacy tags, unordered release selection, download-source and SHA-256 checks passed without creating tasks, downloading or installing anything.");
             Require(SettingsTab.Content?.ToString() == (english ? "Settings" : "设置"), "XAML loads the selected language");
             Require(SettingsPage.WorkingSetCheck.Content?.ToString() == (english ? "Process working sets" : "进程工作集"), "Settings controls are translated");
             Require(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(SettingsPage.PinSwitch) == (english ? "Always on top" : "窗口始终置顶"),

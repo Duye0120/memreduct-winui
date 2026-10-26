@@ -28,7 +28,8 @@ namespace MemReduct.Fluent
     internal static class UpdatePackage
     {
         internal const string Repository = "https://github.com/Duye0120/memreduct-winui";
-        internal const string LatestApi = "https://api.github.com/repos/Duye0120/memreduct-winui/releases/latest";
+        // shortcut: inspect the first 100 releases; add bounded pagination if an active version falls outside that window.
+        internal const string ReleasesApi = "https://api.github.com/repos/Duye0120/memreduct-winui/releases?per_page=100";
         internal const int MaximumMetadata = 1024 * 1024;
         internal const long MaximumDownload = 512L * 1024 * 1024;
 
@@ -51,11 +52,40 @@ namespace MemReduct.Fluent
             ReleaseMetadata release;
             using (var stream = new MemoryStream(bytes))
                 release = (ReleaseMetadata)new DataContractJsonSerializer(typeof(ReleaseMetadata)).ReadObject(stream);
+            return ParseRelease(release, current);
+        }
+
+        internal static AppRelease ParseReleases(string json, Version current)
+        {
+            var bytes = Encoding.UTF8.GetBytes(json);
+            if (bytes.Length > MaximumMetadata) throw new InvalidDataException(UiText.Get("UpdateAssetInvalid"));
+            ReleaseMetadata[] releases;
+            using (var stream = new MemoryStream(bytes))
+                releases = (ReleaseMetadata[])new DataContractJsonSerializer(typeof(ReleaseMetadata[])).ReadObject(stream);
+            if (releases == null || releases.Length > 100) throw new InvalidDataException(UiText.Get("UpdateAssetInvalid"));
+            AppRelease latest = null;
+            foreach (var release in releases)
+            {
+                var candidate = ParseRelease(release, current);
+                if (candidate == null) continue;
+                if (latest == null || candidate.Version > latest.Version) latest = candidate;
+                else if (candidate.Version == latest.Version)
+                {
+                    if (candidate.Size != latest.Size || !string.Equals(candidate.Sha256, latest.Sha256, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidDataException(UiText.Get("UpdateAssetInvalid"));
+                    if (release.Tag.StartsWith("v", StringComparison.Ordinal)) latest = candidate;
+                }
+            }
+            return latest;
+        }
+
+        private static AppRelease ParseRelease(ReleaseMetadata release, Version current)
+        {
             if (release == null) throw new InvalidDataException(UiText.Get("UpdateAssetInvalid"));
             if (release.Draft || release.Prerelease) return null;
             var tag = release.Tag ?? "";
             if (tag == "fluent-v1.0.0" || tag == "fluent-v1.0.1" || tag == "fluent-v1.0.2") return null;
-            var match = Regex.Match(tag, @"^fluent-v(\d+\.\d+\.\d+)$", RegexOptions.CultureInvariant);
+            var match = Regex.Match(tag, @"\A(?:fluent-)?v(\d+\.\d+\.\d+)\z", RegexOptions.CultureInvariant);
             Version version;
             if (!match.Success || !Version.TryParse(match.Groups[1].Value, out version)) return null;
             if (new Version(version.Major, version.Minor, version.Build, 0) <= current) return null;
