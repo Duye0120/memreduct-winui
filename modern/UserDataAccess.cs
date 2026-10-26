@@ -8,7 +8,6 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MemReduct.Fluent
@@ -25,22 +24,34 @@ internal static class UserDataAccess
         {
             if (limited == null)
             {
-                using (var process = Process.Start(new ProcessStartInfo(executable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable) }))
+                using (var process = Process.Start(new ProcessStartInfo(executable, "--restart") { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(executable) }))
                     if (process == null) throw new InvalidOperationException("Could not reopen the application.");
                 return;
             }
-            SafeAccessTokenHandle primary;
-            if (!DuplicateTokenEx(limited, 0x0b, IntPtr.Zero, 2, 1, out primary)) throw new Win32Exception(Marshal.GetLastWin32Error());
-            using (primary)
-            {
-                var startup = new StartupInfo { Size = Marshal.SizeOf(typeof(StartupInfo)), Desktop = @"winsta0\default" };
-                ProcessInformation process;
-                if (!CreateProcessWithTokenW(primary, 1, executable, new StringBuilder("\"" + executable + "\""), 0,
-                    IntPtr.Zero, Path.GetDirectoryName(executable), ref startup, out process))
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-                using (var processHandle = new SafeProcessHandle(process.Process, true))
-                using (var threadHandle = new SafeWaitHandle(process.Thread, true)) { }
-            }
+            WithDesktopShell(shell => ((dynamic)shell).ShellExecute(executable, "--restart", Path.GetDirectoryName(executable), "open", 1));
+        }
+    }
+
+    internal static void WithDesktopShell(Action<object> action)
+    {
+        object windows = null, desktop = null, document = null, application = null;
+        try
+        {
+            windows = Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("9BA05972-F6A8-11CF-A442-00A0C90A8F39"), true));
+            object location = 0, root = null;
+            int window;
+            desktop = ((dynamic)windows).FindWindowSW(ref location, ref root, 8, out window, 1);
+            if (desktop == null || new IntPtr(window) != GetShellWindow())
+                throw new UnauthorizedAccessException(UiText.Get("UserAccessUnavailable"));
+            document = ((dynamic)desktop).Document;
+            application = ((dynamic)document).Application;
+            // Use the verified desktop's Explorer, not a new elevated Shell.Application object.
+            action(application);
+        }
+        finally
+        {
+            foreach (var item in new[] { application, document, desktop, windows })
+                if (item != null && Marshal.IsComObject(item)) Marshal.ReleaseComObject(item);
         }
     }
 
@@ -98,21 +109,5 @@ internal static class UserDataAccess
     private static extern SafeProcessHandle OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint processId);
     [DllImport("user32.dll")] private static extern IntPtr GetShellWindow();
     [DllImport("user32.dll", SetLastError = true)] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
-    [DllImport("advapi32.dll", SetLastError = true)]
-    private static extern bool DuplicateTokenEx(SafeAccessTokenHandle token, uint access, IntPtr attributes, int level, int type, out SafeAccessTokenHandle duplicate);
-    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
-    private static extern bool CreateProcessWithTokenW(SafeAccessTokenHandle token, uint logon, string application, StringBuilder command,
-        uint flags, IntPtr environment, string directory, ref StartupInfo startup, out ProcessInformation process);
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private struct StartupInfo
-    {
-        internal int Size;
-        internal string Reserved, Desktop, Title;
-        internal int X, Y, Width, Height, XChars, YChars, Fill, Flags;
-        internal short Show, ReservedSize;
-        internal IntPtr ReservedData, Input, Output, Error;
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    private struct ProcessInformation { internal IntPtr Process, Thread; internal int ProcessId, ThreadId; }
 }
 }

@@ -127,7 +127,7 @@ pwsh -File .\modern\build-installer.ps1 -Compiler 'D:\apps\Inno Setup 7\ISCC.exe
 
 应用内升级要求同一管理员账户，避免读取或启动到另一账户的配置。普通账户需由管理员手动下载安装包完成安装；管理员凭据是 Windows 要求，应用不存储密码。`/FROMAPP=1` 安装结束或取消时，安装器的 `DeinitializeSetup` 只调用一次受保护助手的 `--launch-ui`，后者核对同账户 shell 普通令牌，经 `DuplicateTokenEx` 和 `CreateProcessWithTokenW` 重开 UI；取不到普通令牌则失败，绝不回退管理员启动。普通手动安装保留原有启动勾选项。
 
-实现依据：[Inno Setup 退出事件](https://jrsoftware.org/ishelp/topic_scriptevents.htm)、[CreateProcessWithTokenW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createprocesswithtokenw)。即使使用 `runasoriginaluser`，已由提权进程启动的安装器也不能保证降权，因此应用内更新改由固定助手明确选择普通令牌。
+实现依据：[Inno Setup 退出事件](https://jrsoftware.org/ishelp/topic_scriptevents.htm)、[通过 Explorer 启动普通权限程序](https://learn.microsoft.com/en-us/windows/win32/shell/samples-execinexplorer)。即使使用 `runasoriginaluser`，已由提权进程启动的安装器也不能保证降权，因此应用内更新改由固定助手校验同账户普通桌面，再由 Explorer 启动。0.0.7–0.0.10 的 `CreateProcessWithTokenW` 重开入口已在用户机器复现“拒绝访问”，0.0.11 改用桌面 Shell，不改变文件访问的普通权限模拟。
 
 从历史 `1.0.0`–`1.0.2` 迁移到 `0.0.1` 需要手动下载安装包一次：旧版只接受更大的版本号，无法通过远程发布修改这个判断。0.x 安装器仅对这三个历史版本放行迁移；其他较高版本仍拒绝降级。新版更新检查忽略三个旧 Release 标签，避免把旧代码当作升级。安装标识、路径、设置和启动任务名称不变；后续按 `0.0.2`、`0.0.3` 等递增，发布时需显式设为 latest。
 

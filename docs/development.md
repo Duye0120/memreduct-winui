@@ -7,6 +7,14 @@
 
 ## 当前待办与已知问题
 
+### 更新完成后无法重开（0.0.11）
+
+- 2026-10-26 用户从应用内更新到 0.0.10 后看到重开失败提示，需手动启动。澄清为安装完成后的重开失败，非 Windows 登录自启；未修改登录启动项或任务。只读检查确认安装目录登记和受保护助手路径有效，未发现相关应用崩溃记录。
+- 经用户分别授权复现与验证两次只读 UAC 诊断。在真实管理员上下文复用原版 `UserDataAccess.StartInstalledUi`，返回“拒绝访问”；前后对照进一步定位到 `CreateProcessWithTokenW`。同一进程中的修复入口成功，隔离测试子进程在父进程结束后输出 `administrator=False`，无安装、真实清理或设置/任务变更。诊断及结果在仓库外 `work/relaunch-probe/elevated-result.txt`、`ab-result.txt`、`ordinary-child-result.txt`；代码与产物仅供诊断，不随产品分发。
+- 保留原同账户、非管理员桌面令牌验证，改经当前桌面 Explorer 的 Shell 接口启动固定登记的主程序，仅传 `--restart`，让既有单实例等待处理旧进程释放。核对 `FindWindowSW` 返回 HWND 与 `GetShellWindow` 一致，释放 COM 引用，助手 Main 标记 STA。普通权限调用保留普通 `Process.Start`；没有管理员 UI 回退。原设置及下载缓存的普通权限模拟代码不变。
+- 依据：[微软 Execute in Explorer 示例](https://learn.microsoft.com/en-us/windows/win32/shell/samples-execinexplorer)、[FindWindowSW](https://learn.microsoft.com/en-us/windows/win32/api/exdisp/nf-exdisp-ishellwindows-findwindowsw)。现有自检新增只读桌面 Shell 解析检查，不启动真实主程序。管理员测试已证明启动 API 路线及子进程权限；完整 Inno 安装/取消后重开 WinUI 仍需实机验收。
+- 固定目录增量构建零警告、零错误，中英文各 31 组功能检查与 48 组布局检查通过，助手 Framework 自检通过。安装版和便携版设置哈希保持不变。界面/只读检查结果位于仓库同级 `MemReduct-Fluent-验证/relaunch-fix-zh-CN`、`relaunch-fix-en-US`；新完整安装包继续输出到 D 盘原安装目录，不覆盖正在运行的主程序。
+
 ### 更新缓存复用、版本与位置（0.0.10）
 
 - 旧 `DownloadCoreAsync` 在请求前直接删除固定的 `update.exe`；窗口重开后 `_downloadedInstaller` 也丢失，未检查磁盘缓存。隔离自检先复现：已有完整缓存仍调用下载函数，断言失败；未触碰真实下载目录。

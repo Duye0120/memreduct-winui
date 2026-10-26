@@ -12,6 +12,9 @@ public sealed partial class MainWindow
 {
     private static async Task CheckUserDataAccessAsync(string directory)
     {
+        var shellReached = false;
+        UserDataAccess.WithDesktopShell(shell => shellReached = System.Runtime.InteropServices.Marshal.IsComObject(shell));
+        Require(shellReached, "The verified desktop Shell automation object can be reached without starting an application");
         static (string? Sid, bool Administrator, bool Impersonating, TokenImpersonationLevel Level) Identity()
         {
             using var identity = WindowsIdentity.GetCurrent();
