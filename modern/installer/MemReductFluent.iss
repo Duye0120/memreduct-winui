@@ -54,9 +54,13 @@ Filename: "{app}\MemReduct.Fluent.exe"; Parameters: "{code:ImportArguments}"; De
 ; Only our verified installer cache. User profiles in LocalAppData are deliberately retained.
 Type: files; Name: "{app}\Updates\update.exe"
 Type: files; Name: "{app}\Updates\update.exe.partial"
+Type: files; Name: "{app}\Updates\MemReductFluent-*-win-x64-setup.exe"
+Type: files; Name: "{app}\Updates\MemReductFluent-*-win-x64-setup.exe.partial"
 Type: dirifempty; Name: "{app}\Updates"
 Type: files; Name: "{commonpf64}\MemReduct Helper\Updates\update.exe"
 Type: files; Name: "{commonpf64}\MemReduct Helper\Updates\update.exe.partial"
+Type: files; Name: "{commonpf64}\MemReduct Helper\Updates\MemReductFluent-*-win-x64-setup.exe"
+Type: files; Name: "{commonpf64}\MemReduct Helper\Updates\MemReductFluent-*-win-x64-setup.exe.partial"
 Type: dirifempty; Name: "{commonpf64}\MemReduct Helper\Updates"
 Type: dirifempty; Name: "{commonpf64}\MemReduct Helper"
 
@@ -354,6 +358,8 @@ begin
     ProtectHelperPath(Executable + '.config');
     if not Exec(Executable, '--verify', Directory, SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
       RaiseException('Cleanup helper protection verification failed.');
+    if not Exec(Executable, '--prepare-update-cache', Directory, SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
+      RaiseException('Could not prepare the update cache directory.');
     if not Exec(Executable, '--migrate-startup', Directory, SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
       MsgBox('The previous startup task could not be migrated. Enable startup in the app settings after installation.', mbInformation, MB_OK);
   end;

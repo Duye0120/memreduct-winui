@@ -55,6 +55,14 @@ public sealed partial class MainWindow
             var settingsTree = SettingsPage;
             EnsureSettingsLoaded();
             Require(ReferenceEquals(settingsTree, SettingsPage), "Settings controls are created once and retained for later visits");
+            var cachedRelease = new AppRelease(new Version(0, 0, 10), new Uri("https://example.invalid/fixture.exe"), new string('0', 64), 100);
+            SetReadyUpdate(cachedRelease);
+            Require(SettingsPage.UpdateButton.Content?.ToString() == UiText.Get("UpdateInstall")
+                && SettingsPage.UpdateStatus.Text.Contains("0.0.10"), "A recovered cache identifies the version and offers installation");
+            _downloadedRelease = null;
+            _startupUpdateStatus = null;
+            SettingsPage.UpdateButton.Content = UiText.Get("UpdateButton.Content");
+            SettingsPage.UpdateStatus.Text = UiText.Get("UpdateStatus.Text");
             SetGameMode(initialGameMode);
             SaveCleanupConfirmation(initialConfirmation);
             File.WriteAllText(Path.Combine(directory, "deferred-settings.json"), JsonSerializer.Serialize(new { loadMilliseconds = loadWatch.Elapsed.TotalMilliseconds }));

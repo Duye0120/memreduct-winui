@@ -65,7 +65,7 @@ public sealed partial class MainWindow
             response.SetResult(release);
             await pending;
             Require(UpdateNotice.IsOpen && UpdateNotice.Title == UiText.Get("UpdateAvailable", release.Version)
-                && SettingsPage is null && _downloadedInstaller is null && !_updateBusy,
+                && SettingsPage is null && _downloadedRelease is null && !_updateBusy,
                 "A newer release produces a nonmodal notice without downloading or installing");
             UpdateNotice.IsOpen = false;
             UpdateNotice.Visibility = Visibility.Collapsed;
@@ -110,6 +110,7 @@ public sealed partial class MainWindow
             _updateBusy = false;
             _startupUpdateChecked = false;
             _startupUpdateStatus = null;
+            _downloadedRelease = null;
             UpdateNotice.IsOpen = false;
             UpdateNotice.Visibility = Visibility.Collapsed;
         }

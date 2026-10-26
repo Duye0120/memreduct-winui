@@ -177,6 +177,7 @@ public sealed partial class MainWindow : Window
         SettingsPage.NotifyCleanupSwitch.IsOn = _settings.NotifyAfterCleanup;
         SettingsPage.AutoUpdateSwitch.IsOn = _settings.CheckUpdatesOnStartup;
         if (_startupUpdateStatus is not null) SettingsPage.UpdateStatus.Text = _startupUpdateStatus;
+        if (_downloadedRelease is not null) SetReadyUpdate(_downloadedRelease);
         SettingsPage.WorkingSetCheck.IsChecked = _settings.CleanWorkingSets;
         SettingsPage.SystemCacheCheck.IsChecked = _settings.CleanSystemCache;
         SettingsPage.StandbyCheck.IsChecked = _settings.CleanLowPriorityStandby;

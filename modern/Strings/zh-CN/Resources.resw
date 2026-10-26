@@ -332,6 +332,7 @@
   <data name="UpdateInstall" xml:space="preserve"><value>安装更新</value></data>
   <data name="UpdateDownload" xml:space="preserve"><value>后台下载</value></data>
   <data name="UpdateReady" xml:space="preserve"><value>下载完成，点击「安装更新」后请求管理员权限。</value></data>
+  <data name="UpdateReadyVersion" xml:space="preserve"><value>版本 {0} 已下载，可安装更新。</value></data>
   <data name="UpdateInstalling" xml:space="preserve"><value>正在准备安装，验证完成后将退出当前程序…</value></data>
   <data name="UpdateCanceled" xml:space="preserve"><value>已取消授权，程序继续运行；可稍后点击安装更新。</value></data>
   <data name="UpdateSameUser" xml:space="preserve"><value>应用内更新请使用当前账户授权。如需另一个管理员账户，请从发布页下载安装包进行安装。</value></data>

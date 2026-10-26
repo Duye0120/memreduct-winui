@@ -7,7 +7,7 @@ namespace MemReduct.Fluent;
 public sealed partial class MainWindow
 {
     private bool _updateBusy;
-    private string? _downloadedInstaller;
+    private AppRelease? _downloadedRelease;
     private CancellationTokenSource? _updateCancellation;
     private bool _startupUpdateChecked;
     private string? _startupUpdateStatus;
@@ -23,8 +23,11 @@ public sealed partial class MainWindow
         try
         {
             var release = await check(cancellation.Token);
+            var cached = release is not null && Installation.IsInstalled
+                && await UpdateService.IsCachedAsync(release, cancellation.Token);
             if (_exitRequested || cancellation.IsCancellationRequested || !_settings.CheckUpdatesOnStartup || _updateBusy) return;
-            _startupUpdateStatus = release is null ? UiText.Get("UpdateNone") : UiText.Get("UpdateAvailable", release.Version);
+            if (cached) SetReadyUpdate(release!);
+            else _startupUpdateStatus = release is null ? UiText.Get("UpdateNone") : UiText.Get("UpdateAvailable", release.Version);
             if (SettingsPage is not null) SettingsPage.UpdateStatus.Text = _startupUpdateStatus;
             if (release is not null)
             {
@@ -42,6 +45,16 @@ public sealed partial class MainWindow
             if (SettingsPage is not null) SettingsPage.UpdateStatus.Text = _startupUpdateStatus;
         }
         finally { _startupUpdateCancellation = null; }
+    }
+
+    private void SetReadyUpdate(AppRelease release)
+    {
+        _downloadedRelease = release;
+        _startupUpdateStatus = UiText.Get("UpdateReadyVersion", release.Version);
+        if (SettingsPage is null) return;
+        SettingsPage.UpdateButton.Content = UiText.Get("UpdateInstall");
+        SettingsPage.UpdateStatus.Text = _startupUpdateStatus;
+        ToolTipService.SetToolTip(SettingsPage.UpdateStatus, UpdateService.DownloadPath(release));
     }
 
     private void UpdateDetails_Click(object sender, RoutedEventArgs args)
@@ -79,13 +92,13 @@ public sealed partial class MainWindow
         SettingsPage.UpdateProgress.Visibility = Visibility.Collapsed;
         try
         {
-            if (_downloadedInstaller is not null)
+            if (_downloadedRelease is not null)
             {
                 _restartPromptOpen = true;
                 RefreshOptions();
                 if (!SaveSettings()) return;
                 SettingsPage.UpdateStatus.Text = UiText.Get("UpdateInstalling");
-                await UpdateService.RequestInstallAsync(_downloadedInstaller);
+                await UpdateService.RequestInstallAsync(_downloadedRelease);
                 if (_exitRequested) return;
                 ExitWindow();
                 return;
@@ -98,6 +111,11 @@ public sealed partial class MainWindow
             if (!Installation.IsInstalled)
             {
                 SettingsPage.UpdateStatus.Text += " " + UiText.Get("UpdatePortable");
+                return;
+            }
+            if (await UpdateService.IsCachedAsync(release, _updateCancellation.Token))
+            {
+                if (!_exitRequested) SetReadyUpdate(release);
                 return;
             }
             _restartPromptOpen = true;
@@ -127,11 +145,10 @@ public sealed partial class MainWindow
                 SettingsPage.UpdateStatus.Text = UiText.Get("UpdateDownloadProgress", SettingsPage.UpdateProgress.Value,
                     MemorySnapshot.Bytes((ulong)received), MemorySnapshot.Bytes((ulong)release.Size));
             });
-            _downloadedInstaller = await UpdateService.DownloadAsync(release, progress, _updateCancellation.Token);
+            await UpdateService.DownloadAsync(release, progress, _updateCancellation.Token);
             if (_exitRequested) return;
             SettingsPage.UpdateProgress.Value = 100;
-            SettingsPage.UpdateButton.Content = UiText.Get("UpdateInstall");
-            SettingsPage.UpdateStatus.Text = UiText.Get("UpdateReady");
+            SetReadyUpdate(release);
         }
         catch (Win32Exception error) when (error.NativeErrorCode == 1223)
         { if (!_exitRequested) SettingsPage.UpdateStatus.Text = UiText.Get("UpdateCanceled"); }
@@ -144,7 +161,7 @@ public sealed partial class MainWindow
         catch (Exception error)
         {
             if (_exitRequested) return;
-            _downloadedInstaller = null;
+            _downloadedRelease = null;
             SettingsPage.UpdateButton.Content = UiText.Get("UpdateButton.Content");
             SettingsPage.UpdateStatus.Text = UiText.Get("UpdateFailed");
             ReportIssue(SettingsPage.UpdateStatus.Text, error.Message);

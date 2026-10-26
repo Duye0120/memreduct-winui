@@ -84,6 +84,45 @@ public sealed partial class MainWindow
         var payload = Enumerable.Range(0, 200000).Select(x => (byte)x).ToArray();
         var hash = Convert.ToHexString(SHA256.HashData(payload)).ToLowerInvariant();
         var release = new AppRelease(new Version(0, 0, 1), new Uri(UpdateService.Repository), hash, payload.Length);
+        var cache = Path.Combine(directory, "MemReductFluent-0.0.1-win-x64-setup.exe");
+        File.WriteAllBytes(cache, payload);
+        var downloads = 0;
+        Task<System.Net.Http.HttpResponseMessage> Fetch(Uri _, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            downloads++;
+            return Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                { Content = new System.Net.Http.ByteArrayContent(payload) });
+        }
+        await UpdateService.DownloadCoreAsync(release, cache, null, CancellationToken.None, Fetch);
+        Require(downloads == 0 && File.ReadAllBytes(cache).SequenceEqual(payload),
+            "A verified cached installer is reused without making another download request");
+        Require(UpdatePackage.CachePath(@"D:\apps\MemReduct Fluent", new Version(0, 0, 10))
+            == @"D:\apps\MemReduct Fluent\Updates\MemReductFluent-0.0.10-win-x64-setup.exe",
+            "The cache stays within the chosen installation folder and names the installer version");
+        File.WriteAllBytes(cache, new byte[payload.Length]);
+        await UpdateService.DownloadCoreAsync(release, cache, null, CancellationToken.None, Fetch);
+        Require(downloads == 1 && await UpdateService.VerifyCacheAsync(cache, release, CancellationToken.None),
+            "A same-size tampered cache is downloaded again and verified");
+        File.WriteAllBytes(cache, payload[..^1]);
+        await UpdateService.DownloadCoreAsync(release, cache, null, CancellationToken.None, Fetch);
+        Require(downloads == 2, "A truncated installer cannot be reused");
+        var cleanupDirectory = Path.Combine(directory, "protected-cleanup-fixture");
+        Directory.CreateDirectory(cleanupDirectory);
+        var cleanupFile = Path.Combine(cleanupDirectory, UpdatePackage.InstallerName(release.Version));
+        File.WriteAllBytes(cleanupFile, payload);
+        var preservedFile = Path.Combine(cleanupDirectory, "settings.json");
+        File.WriteAllText(preservedFile, "preserve this unrelated fixture");
+        var fileLock = new FileStream(cleanupFile, FileMode.Open, FileAccess.Read, FileShare.None);
+        var cleanup = HelperUpdates.CleanupAsync(cleanupDirectory, (_, _) => { });
+        Require(!cleanup.IsCompleted, "Temporary installer cleanup waits for setup to release its executable");
+        fileLock.Dispose();
+        await cleanup;
+        Require(!File.Exists(cleanupFile) && File.ReadAllText(preservedFile) == "preserve this unrelated fixture",
+            "Temporary cleanup removes only installer files and preserves unrelated files");
+        Require(UpdatePackage.IsCacheFile("update.exe") && UpdatePackage.IsCacheFile("MemReductFluent-0.0.10-win-x64-setup.exe.partial")
+            && !UpdatePackage.IsCacheFile("settings.json") && !UpdatePackage.IsCacheFile("other.exe"),
+            "Cleanup accepts only the exact legacy and versioned installer naming contracts");
         var destination = Path.Combine(directory, "update-copy-check.bin");
         if (File.Exists(destination)) File.Delete(destination);
         var progress = new List<long>();

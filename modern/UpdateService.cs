@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace MemReduct.Fluent;
@@ -13,7 +14,7 @@ internal static class UpdateService
     internal static Version CurrentVersion => Assembly.GetExecutingAssembly().GetName().Version!;
     internal static string DisplayVersion => CurrentVersion.ToString(3);
     private static readonly HttpClient Client = CreateClient();
-    internal static string DownloadPath => Path.Combine(Installation.UserDirectory, "Updates", "update.exe");
+    internal static string DownloadPath(AppRelease release) => UpdatePackage.CachePath(Installation.DirectoryPath, release.Version);
 
     private static HttpClient CreateClient()
     {
@@ -39,18 +40,44 @@ internal static class UpdateService
         => UpdatePackage.ParseRelease(json.GetRawText(), current);
 
     internal static Task<string> DownloadAsync(AppRelease release, IProgress<long>? progress = null, CancellationToken cancellationToken = default) =>
-        UserDataAccess.RunAsync(() => DownloadCoreAsync(release, progress, cancellationToken));
+        UserDataAccess.RunAsync(() => DownloadCoreAsync(release, DownloadPath(release), progress, cancellationToken, GetDownloadAsync));
 
-    private static async Task<string> DownloadCoreAsync(AppRelease release, IProgress<long>? progress, CancellationToken cancellationToken)
+    internal static Task<bool> IsCachedAsync(AppRelease release, CancellationToken token) =>
+        UserDataAccess.RunAsync(() => VerifyCacheAsync(DownloadPath(release), release, token));
+
+    internal static async Task<bool> VerifyCacheAsync(string path, AppRelease release, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (!File.Exists(path)) return false;
+        CheckCachePath(path);
+        await using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true);
+        return source.Length == release.Size
+            && DigestMatches(await SHA256.HashDataAsync(source, token).ConfigureAwait(false), release.Sha256);
+    }
+
+    private static void CheckCachePath(string path)
+    {
+        for (var parent = new FileInfo(path).Directory; parent is not null; parent = parent.Parent)
+            if (parent.Exists && (parent.Attributes & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("Update cache cannot be a symbolic link.");
+        if (File.Exists(path) && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException("Update cache cannot be a symbolic link.");
+    }
+
+    internal static async Task<string> DownloadCoreAsync(AppRelease release, string target, IProgress<long>? progress,
+        CancellationToken cancellationToken, Func<Uri, CancellationToken, Task<HttpResponseMessage>> getDownload)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var directory = Path.GetDirectoryName(DownloadPath)!;
+        var directory = Path.GetDirectoryName(target)!;
+        CheckCachePath(target);
         Directory.CreateDirectory(directory);
-        foreach (var folder in new[] { Installation.UserDirectory, directory })
-            if ((File.GetAttributes(folder) & FileAttributes.ReparsePoint) != 0)
-                throw new IOException("Update cache cannot be a symbolic link.");
-        var target = DownloadPath;
         var partial = target + ".partial";
+        if (await VerifyCacheAsync(target, release, cancellationToken))
+        {
+            progress?.Report(release.Size);
+            return target;
+        }
+        CheckCachePath(partial);
         // This cache is never executed. The elevated helper independently verifies a protected copy.
         if (File.Exists(target)) File.Delete(target);
         if (File.Exists(partial)) File.Delete(partial);
@@ -58,7 +85,7 @@ internal static class UpdateService
         timeout.CancelAfter(TimeSpan.FromMinutes(10));
         try
         {
-            using var response = await GetDownloadAsync(release.Download, timeout.Token);
+            using var response = await getDownload(release.Download, timeout.Token);
             if (response.Content.Headers.ContentLength is long length && length != release.Size) throw new InvalidDataException(UiText.Get("UpdateHashFailed"));
             await using (var source = await response.Content.ReadAsStreamAsync(timeout.Token))
                 await CopyVerifiedAsync(source, partial, release, timeout.Token, progress);
@@ -95,10 +122,10 @@ internal static class UpdateService
         throw new InvalidDataException(UiText.Get("UpdateAssetInvalid"));
     }
 
-    internal static async Task RequestInstallAsync(string path)
+    internal static async Task RequestInstallAsync(AppRelease release)
     {
         if (!Installation.IsInstalled) throw new InvalidOperationException(UiText.Get("InstalledOnly"));
-        if (path != DownloadPath) throw new InvalidOperationException();
+        if (!await IsCachedAsync(release, CancellationToken.None)) throw new InvalidDataException(UiText.Get("UpdateHashFailed"));
         HelperTrust.RequireProtected();
         using var process = Process.Start(CreateInstallStartInfo()) ?? throw new InvalidOperationException(UiText.Get("UpdateFailed"));
         await process.WaitForExitAsync();

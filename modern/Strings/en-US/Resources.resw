@@ -332,6 +332,7 @@
   <data name="UpdateInstall" xml:space="preserve"><value>Install update</value></data>
   <data name="UpdateDownload" xml:space="preserve"><value>Download</value></data>
   <data name="UpdateReady" xml:space="preserve"><value>Download ready. Click Install update to authorize installation.</value></data>
+  <data name="UpdateReadyVersion" xml:space="preserve"><value>Version {0} is downloaded. Ready to install.</value></data>
   <data name="UpdateInstalling" xml:space="preserve"><value>Preparing installation. The app will exit after verification…</value></data>
   <data name="UpdateCanceled" xml:space="preserve"><value>Authorization canceled. The app is still running; install when ready.</value></data>
   <data name="UpdateSameUser" xml:space="preserve"><value>Authorize in-app updates with the current account. To use another administrator account, download and run setup from the release page.</value></data>

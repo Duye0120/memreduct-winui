@@ -32,6 +32,18 @@ namespace MemReduct.Fluent
         internal const int MaximumMetadata = 1024 * 1024;
         internal const long MaximumDownload = 512L * 1024 * 1024;
 
+        internal static string InstallerName(Version version)
+        { return "MemReductFluent-" + version.ToString(3) + "-win-x64-setup.exe"; }
+
+        internal static string CachePath(string installation, Version version)
+        { return Path.Combine(installation, "Updates", InstallerName(version)); }
+
+        internal static bool IsCacheFile(string name)
+        {
+            return name == "update.exe" || name == "update.exe.partial"
+                || Regex.IsMatch(name, @"\AMemReductFluent-[0-9]+\.[0-9]+\.[0-9]+-win-x64-setup\.exe(\.partial)?\z", RegexOptions.CultureInvariant);
+        }
+
         internal static AppRelease ParseRelease(string json, Version current)
         {
             var bytes = Encoding.UTF8.GetBytes(json);
@@ -47,7 +59,7 @@ namespace MemReduct.Fluent
             Version version;
             if (!match.Success || !Version.TryParse(match.Groups[1].Value, out version)) return null;
             if (new Version(version.Major, version.Minor, version.Build, 0) <= current) return null;
-            var name = "MemReductFluent-" + version + "-win-x64-setup.exe";
+            var name = InstallerName(version);
             var assets = (release.Assets ?? new AssetMetadata[0]).Where(candidate => candidate != null && candidate.Name == name).ToArray();
             if (assets.Length != 1) throw new InvalidDataException(UiText.Get("UpdateAssetInvalid"));
             var asset = assets[0];

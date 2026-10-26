@@ -17,12 +17,21 @@ internal static class Program
         {
             if (args.Length == 1 && args[0] == "--self-check") { Check(); return 0; }
             if (args.Length == 1 && args[0] == "--verify") { HelperTrust.RequireProtected(); Check(); return 0; }
+            if (args.Length == 1 && args[0] == "--prepare-update-cache")
+            { HelperTrust.RequireProtected(); HelperUpdates.PrepareCacheDirectory(); return 0; }
             if (args.Length == 1 && args[0] == "--migrate-startup") { HelperTasks.Configure("migrate", HelperTrust.UserSid); return 0; }
-            if (args.Length == 1 && args[0] == "--launch-ui") { HelperTrust.RequireProtected(); UserDataAccess.StartInstalledUi(); return 0; }
+            if (args.Length == 1 && args[0] == "--launch-ui")
+            {
+                HelperTrust.RequireProtected();
+                try { HelperUpdates.StartCleanup(); } catch { /* Cleanup must not prevent the UI from reopening. */ }
+                UserDataAccess.StartInstalledUi();
+                return 0;
+            }
             if (args.Length != 2 || args[1] != HelperTrust.UserSid || !MemoryEngine.IsAdministrator) return 5;
             HelperTrust.RequireProtected();
             if (args[0] == "--serve") Serve().GetAwaiter().GetResult();
             else if (args[0] == "--install-update") HelperUpdates.InstallAsync().GetAwaiter().GetResult();
+            else if (args[0] == "--cleanup-updates") HelperUpdates.CleanupAsync().GetAwaiter().GetResult();
             else HelperTasks.Configure(args[0], args[1]);
             return 0;
         }

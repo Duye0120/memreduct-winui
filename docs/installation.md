@@ -107,9 +107,11 @@ pwsh -File .\modern\build-installer.ps1 -Compiler 'D:\apps\Inno Setup 7\ISCC.exe
 
 空分类省略，中英文逐项对应。每条优先用一句话说明用户可感知的变化，只列实际完成的内容，不直接粘贴提交信息。内部实现、自检数量、CI 与详细验收证据保留在开发文档；必要的安装说明或已知限制可在更新日志后简短补充。
 
-默认每次进程启动后台检查一次更新，可在“设置 → 关于”关闭；手动检查入口继续保留。不轮询、不自动下载或静默安装，离线不弹模态窗口。便携版提供发布页入口；安装版确认后在当前进程后台下载到 `%LOCALAPPDATA%\MemReductFluent\Updates\update.exe`，期间不提权、不重启。来源固定为本人仓库的精确资产地址，重定向只允许 HTTPS GitHub 下载域，下载校验大小及 SHA-256。
+默认每次进程启动后台检查一次更新，可在“设置 → 关于”关闭；手动检查入口继续保留。不轮询、不自动下载或静默安装，离线不弹模态窗口。便携版提供发布页入口；安装版确认后在当前进程后台下载到 `<安装目录>\Updates\MemReductFluent-X.Y.Z-win-x64-setup.exe`，期间不提权、不重启。再次检查时先校验已有文件的大小和 SHA-256，完整缓存直接恢复为可安装状态，不重复下载，界面显示对应版本。来源固定为本人仓库的精确资产地址，重定向只允许 HTTPS GitHub 下载域。
 
-点击「安装更新」才通过 UAC 启动固定的 `Program Files\MemReduct Helper\MemReduct.Helper.exe --install-update <SID>`。助手不创建主窗口、托盘或实例互斥量，不读写设置；重新读取 GitHub 正式发布元数据，以当前账户普通令牌打开用户缓存，将其复制到受保护的 `Program Files\MemReduct Helper\Updates\update.exe`，再次校验大小和 SHA-256，再启动安装器。目标目录仅来自 HKLM 卸载项，通过 `/DIR` 保留，UI 不向助手传递路径、URL、哈希或命令。用户缓存从不直接执行。原进程仅在助手成功后退出；取消 UAC 则保持运行和可重试状态，验证失败恢复检查更新入口。两处缓存均复用固定文件名。
+点击「安装更新」才通过 UAC 启动固定的 `Program Files\MemReduct Helper\MemReduct.Helper.exe --install-update <SID>`。助手不创建主窗口、托盘或实例互斥量，不读写设置；重新读取 GitHub 正式发布元数据，以当前账户普通令牌打开安装目录内的版本缓存，将其复制到受保护的 `Program Files\MemReduct Helper\Updates\MemReductFluent-X.Y.Z-win-x64-setup.exe`，再次校验大小和 SHA-256，再启动安装器。目标目录仅来自 HKLM 卸载项，通过 `/DIR` 保留，UI 不向助手传递路径、URL、哈希或命令。用户缓存从不直接执行。原进程仅在助手成功后退出；取消 UAC 则保持运行和可重试状态，验证失败恢复检查更新入口。安装结束的 `--launch-ui` 同时启动固定 `--cleanup-updates <SID>` 子进程，等待安装器释放文件后回收已知安装包/partial，不删除其他文件。
+
+0.0.9 及更早版本仍使用旧的 LocalAppData 缓存与固定 `update.exe` 名称；已运行的旧版不会因远程发布自动改变存储逻辑，需要先安装修复版一次。受保护临时副本的结束回收由新版助手执行；若首次升级在替换旧助手前取消，旧助手仍保持原行为。设置继续保存在原位置，缓存搬迁不改动设置。
 
 应用内升级要求同一管理员账户，避免读取或启动到另一账户的配置。普通账户需由管理员手动下载安装包完成安装；管理员凭据是 Windows 要求，应用不存储密码。`/FROMAPP=1` 安装结束或取消时，安装器的 `DeinitializeSetup` 只调用一次受保护助手的 `--launch-ui`，后者核对同账户 shell 普通令牌，经 `DuplicateTokenEx` 和 `CreateProcessWithTokenW` 重开 UI；取不到普通令牌则失败，绝不回退管理员启动。普通手动安装保留原有启动勾选项。
 
