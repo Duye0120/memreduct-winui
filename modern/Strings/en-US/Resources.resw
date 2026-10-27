@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -7,7 +7,7 @@
     <value>2.0</value>
   </resheader>
   <data name="AboutHeading.Text" xml:space="preserve">
-    <value>About</value>
+    <value>About and updates</value>
   </data>
   <data name="AdminBanner.Message" xml:space="preserve">
     <value>Automatic cleaning requires administrator permission.</value>
@@ -27,9 +27,7 @@
   <data name="AuthorizeDescription" xml:space="preserve">
     <value>Cleaning asks for administrator permission.</value>
   </data>
-  <data name="AutoModes" xml:space="preserve">
-    <value>Automatic cleaning · {0}</value>
-  </data>
+  <data name="AutoModes" xml:space="preserve"><value>Automatic cleanup  {0}</value></data>
   <data name="AutoOff" xml:space="preserve">
     <value>Automatic cleaning is off</value>
   </data>
@@ -115,7 +113,7 @@
     <value>Follow system</value>
   </data>
   <data name="FreedStatus" xml:space="preserve">
-    <value>{0:HH:mm} · Available memory increased by {1}</value>
+    <value>{0:HH:mm}  Available memory increased by {1}</value>
   </data>
   <data name="IntervalLabel.Text" xml:space="preserve">
     <value>Clean at regular intervals</value>
@@ -136,7 +134,7 @@
     <value>After changing language, restart the app now or later.</value>
   </data>
   <data name="LastClean" xml:space="preserve">
-    <value>Last cleaned · {0:MM-dd HH:mm}</value>
+    <value>Last cleaned  {0:MM-dd HH:mm}</value>
   </data>
   <data name="LicenseNote.Text" xml:space="preserve">
     <value>Based on Henry++'s Mem Reduct, licensed under GPL.</value>
@@ -234,9 +232,7 @@
   <data name="ThresholdLabel.Text" xml:space="preserve">
     <value>Clean at memory threshold</value>
   </data>
-  <data name="ThresholdMode" xml:space="preserve">
-    <value>At {0}% memory usage</value>
-  </data>
+  <data name="ThresholdMode" xml:space="preserve"><value>at {0}%</value></data>
   <data name="ThresholdNumber.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Usage threshold (%)</value>
   </data>
@@ -262,10 +258,10 @@
     <value>Tray icon unavailable</value>
   </data>
   <data name="TrayUsage" xml:space="preserve">
-    <value>Mem Reduct Fluent · Memory {0:0.0}%</value>
+    <value>Mem Reduct Fluent  Memory {0:0.0}%</value>
   </data>
   <data name="WaitingPermission" xml:space="preserve">
-    <value> · Awaiting administrator permission</value>
+    <value>  Awaiting administrator permission</value>
   </data>
   <data name="WorkingSetCheck.Content" xml:space="preserve">
     <value>Process working sets</value>
@@ -287,7 +283,7 @@
   <data name="StandbyDescription.Text" xml:space="preserve"><value>Release only low-priority standby caches, with less impact on frequently used cached data.</value></data>
   <data name="RegistryDescription.Text" xml:space="preserve"><value>Synchronize cached registry data to disk. Adds disk writes and may not immediately free RAM.</value></data>
   <data name="CombineDescription.Text" xml:space="preserve"><value>Scan and merge physical pages with identical content. Uses some CPU; savings depend on duplicate pages.</value></data>
-  <data name="ManualOnlyAuto" xml:space="preserve"><value>Automatic cleaning paused · Only manual items marked * are selected.</value></data>
+  <data name="ManualOnlyAuto" xml:space="preserve"><value>Automatic cleaning paused  Only manual items marked * are selected.</value></data>
   <data name="LanguageRestartTitle" xml:space="preserve"><value>Restart to apply language</value></data>
   <data name="LanguageRestartMessage" xml:space="preserve"><value>Your language choice is saved. Restart Mem Reduct to apply it throughout the app. You can restart now or reopen it later. Your PC will not restart.</value></data>
   <data name="RestartNow" xml:space="preserve"><value>Restart now</value></data>
@@ -297,16 +293,16 @@
   <data name="GameModeDescription.Text" xml:space="preserve"><value>Pause automatic cleanup in full screen; wait 30 seconds after leaving.</value></data>
   <data name="GameModeSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Pause automatic cleanup for full-screen apps</value></data>
   <data name="GameModeMenu" xml:space="preserve"><value>Game mode (detect full screen)</value></data>
-  <data name="GameModeActive" xml:space="preserve"><value>Game mode · automatic cleanup paused</value></data>
-  <data name="GameModeWatching" xml:space="preserve"><value>Game mode · watching for full-screen apps, including video</value></data>
+  <data name="GameModeActive" xml:space="preserve"><value>Game mode  automatic cleanup paused</value></data>
+  <data name="GameModeWatching" xml:space="preserve"><value>Game mode  watching for full-screen apps, including video</value></data>
   <data name="GameModeOff" xml:space="preserve"><value>Game mode is off</value></data>
   <data name="MemoryNormal" xml:space="preserve"><value>Memory usage normal</value></data>
   <data name="MemoryWarning" xml:space="preserve"><value>Memory usage high</value></data>
   <data name="MemoryCritical" xml:space="preserve"><value>Memory usage critical</value></data>
   <data name="CleanupCanceled" xml:space="preserve"><value>Cleanup canceled</value></data>
-  <data name="CleanupHasErrors" xml:space="preserve"><value>Cleanup errors · open from the menu for details</value></data>
-  <data name="TrayClickConfirmHint" xml:space="preserve"><value>Left-click: confirm cleanup · right-click: menu</value></data>
-  <data name="TrayClickDirectHint" xml:space="preserve"><value>Left-click: clean directly · right-click: menu</value></data>
+  <data name="CleanupHasErrors" xml:space="preserve"><value>Cleanup errors  open from the menu for details</value></data>
+  <data name="TrayClickConfirmHint" xml:space="preserve"><value>Left-click: confirm cleanup  right-click: menu</value></data>
+  <data name="TrayClickDirectHint" xml:space="preserve"><value>Left-click: clean directly  right-click: menu</value></data>
   <data name="TrayFirstCleanTitle" xml:space="preserve"><value>Left-click the tray to clean</value></data>
   <data name="TrayFirstCleanMessage" xml:space="preserve"><value>Left-click the tray number to clean the selected memory areas; right-click to open the menu. Apps may briefly reload cached data afterward. Choose whether future manual cleanups need confirmation. You can change this in the tray menu or Settings.</value></data>
   <data name="TrayConfirmChoice" xml:space="preserve"><value>Keep asking before manual cleanup</value></data>
@@ -321,7 +317,7 @@
   <data name="InstalledStartupNote" xml:space="preserve"><value>The app keeps ordinary permissions. Enable startup to launch the app and protected cleanup helper at sign-in; first-time setup needs this account's authorization.</value></data>
   <data name="StartupAdminFailed" xml:space="preserve"><value>Startup setup did not finish. Authorize with the currently signed-in administrator account, not another account.</value></data>
   <data name="UpdateButton.Content" xml:space="preserve"><value>Check for updates</value></data>
-  <data name="ReleasesLink.Content" xml:space="preserve"><value>Downloads and release notes</value></data>
+  <data name="ReleasesLink.Content" xml:space="preserve"><value>Release notes</value></data>
   <data name="UpdateAssetInvalid" xml:space="preserve"><value>The release asset is invalid or has no SHA-256 digest. Update stopped.</value></data>
   <data name="UpdateHashFailed" xml:space="preserve"><value>Download size or SHA-256 verification failed. The installer was not executed.</value></data>
   <data name="UpdateChecking" xml:space="preserve"><value>Checking for a stable release…</value></data>
@@ -340,7 +336,7 @@
   <data name="UpdateDownloading" xml:space="preserve"><value>Downloading and verifying the installer…</value></data>
   <data name="UpdateFailed" xml:space="preserve"><value>Update did not complete. The current version and settings are preserved.</value></data>
   <data name="ThresholdRetryDeferred" xml:space="preserve">
-    <value> · Still above threshold; threshold retry deferred for 5 minutes</value>
+    <value>  Still above threshold; threshold retry deferred for 5 minutes</value>
   </data>
   <data name="UpdateStatus.Text" xml:space="preserve"><value>Check GitHub for a new version.</value></data>
   <data name="StartupResumeFailed" xml:space="preserve"><value>The authorized startup task could not be reused. The app opened normally; you can still authorize cleanup manually.</value></data>
@@ -355,30 +351,42 @@
   <data name="PressureNormal" xml:space="preserve"><value>Normal usage</value></data>
   <data name="PressureElevated" xml:space="preserve"><value>Elevated usage</value></data>
   <data name="PressureHigh" xml:space="preserve"><value>High usage</value></data>
-  <data name="AdvancedCleanupSummary" xml:space="preserve"><value>More cleanup areas · {0} of 5 selected</value></data>
+  <data name="AdvancedCleanupSummary" xml:space="preserve"><value>More cleanup areas  {0} of 5 selected</value></data>
   <data name="UpdateCancelDownload" xml:space="preserve"><value>Cancel download</value></data>
   <data name="UpdateDownloadCanceled" xml:space="preserve"><value>Download canceled and partial file removed. Check for updates again when ready.</value></data>
-  <data name="UpdateDownloadProgress" xml:space="preserve"><value>Downloading {0:0}% · {1} / {2}</value></data>
+  <data name="UpdateDownloadProgress" xml:space="preserve"><value>Downloading {0:0}%  {1} / {2}</value></data>
   <data name="UpdateProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Update download progress</value></data>
   <data name="InstalledStartupOn" xml:space="preserve"><value>Sign-in starts the app and cleanup helper. The app keeps ordinary permissions; reopening reuses the helper's authorization.</value></data>
   <data name="AuthorizeSessionDescription" xml:space="preserve"><value>Authorization lasts for this session. Enable administrator startup to reuse it when reopening.</value></data>
-  <data name="CleanupHistoryHeading.Text" xml:space="preserve"><value>Recent cleanups · This session</value></data>
-  <data name="CleanupHistoryResult" xml:space="preserve"><value>Available memory increased by {0} · {1:0.0} seconds</value></data>
-  <data name="CleanupHistoryErrors" xml:space="preserve"><value> · Errors: {0}</value></data>
-  <data name="CleanupHistoryFailure" xml:space="preserve"><value>{0:0.0} seconds · {1}</value></data>
-  <data name="CleanupHistoryManual" xml:space="preserve"><value>{0:HH:mm:ss} · Manual</value></data>
-  <data name="CleanupHistoryAutomatic" xml:space="preserve"><value>{0:HH:mm:ss} · Automatic</value></data>
-  <data name="ProcessesHeading.Text" xml:space="preserve"><value>Which processes use memory?</value></data>
+  <data name="CleanupHistoryHeading.Text" xml:space="preserve"><value>Recent cleanups</value></data>
+  <data name="CleanupHistoryResult" xml:space="preserve"><value>Available memory increased by {0}  {1:0.0} seconds</value></data>
+  <data name="CleanupHistoryErrors" xml:space="preserve"><value>  Errors: {0}</value></data>
+  <data name="CleanupHistoryFailure" xml:space="preserve"><value>{0:0.0} seconds  {1}</value></data>
+  <data name="CleanupHistoryManual" xml:space="preserve"><value>{0:HH:mm:ss}  Manual</value></data>
+  <data name="CleanupHistoryAutomatic" xml:space="preserve"><value>{0:HH:mm:ss}  Automatic</value></data>
+  <data name="ProcessesHeading.Text" xml:space="preserve"><value>Process memory</value></data>
   <data name="ProcessesDescription.Text" xml:space="preserve"><value>Top 8 processes by working set, including shared memory. These values cannot be added to calculate total usage. Read on first expansion; refresh manually afterwards.</value></data>
   <data name="ProcessRefreshButton.Content" xml:space="preserve"><value>Refresh processes</value></data>
   <data name="ProcessStatus.Text" xml:space="preserve"><value>Expand to read. No background process scans.</value></data>
   <data name="ProcessesReading" xml:space="preserve"><value>Reading process memory…</value></data>
-  <data name="ProcessesUpdated" xml:space="preserve"><value>Updated {0:HH:mm:ss} · Top {1} processes</value></data>
-  <data name="ProcessesUnavailable" xml:space="preserve"><value> · {0} exited or unavailable</value></data>
+  <data name="ProcessesUpdated" xml:space="preserve"><value>Updated {0:HH:mm:ss}  Top {1} processes</value></data>
+  <data name="ProcessesUnavailable" xml:space="preserve"><value>  {0} exited or unavailable</value></data>
   <data name="ProcessesFailed" xml:space="preserve"><value>Could not refresh processes. Previous results are retained.</value></data>
   <data name="UserAccessUnavailable" xml:space="preserve"><value>Could not access settings or the download cache with this account's ordinary permissions. Keep Windows UAC enabled and run from a normal signed-in account.</value></data>
   <data name="SettingsTooLarge" xml:space="preserve"><value>The settings file exceeds 64 KiB and cannot be read. The original file was not modified.</value></data>
   <data name="HelperAuthorizeDescription" xml:space="preserve"><value>Authorize the protected cleanup helper once and reuse it when reopening. The app keeps ordinary permissions.</value></data>
   <data name="HelperUnavailable" xml:space="preserve"><value>The cleanup helper could not start. Repair the installation with the latest setup package and retry.</value></data>
   <data name="AuthorizeHelper" xml:space="preserve"><value>Authorize cleanup helper</value></data>
+  <data name="PhysicalUsageLabel.Text" xml:space="preserve"><value>Physical memory usage</value></data>
+  <data name="UsedLabel.Text" xml:space="preserve"><value>Used</value></data>
+  <data name="AvailableLabel.Text" xml:space="preserve"><value>Available</value></data>
+  <data name="TotalLabel.Text" xml:space="preserve"><value>Total</value></data>
+  <data name="LastFreedLabel.Text" xml:space="preserve"><value>Last released</value></data>
+  <data name="SessionLabel.Text" xml:space="preserve"><value>This session</value></data>
+  <data name="DetailsLabel.Text" xml:space="preserve"><value>View details</value></data>
+  <data name="CleanupHistoryEmpty.Text" xml:space="preserve"><value>No cleanups this session</value></data>
+  <data name="FullscreenPauseLabel" xml:space="preserve"><value>Pause in full screen</value></data>
+  <data name="CleanupSummaryManual" xml:space="preserve"><value>{0:HH:mm} Manual</value></data>
+  <data name="CleanupSummaryAutomatic" xml:space="preserve"><value>{0:HH:mm} Automatic</value></data>
+  <data name="AutoModeJoin" xml:space="preserve"><value> or </value></data>
 </root>

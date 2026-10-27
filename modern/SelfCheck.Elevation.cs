@@ -15,26 +15,24 @@ public sealed partial class MainWindow
             RefreshOptions();
             ReflowMetrics(700, 1);
             SetGameMode(!initialGameMode);
-            PaneToggle_Click(PaneToggleButton, new Microsoft.UI.Xaml.RoutedEventArgs());
             Require(!SaveCleanupConfirmation(!initialConfirmation) && _settings.GameMode == initialGameMode
                 && _settings.ConfirmCleanup == initialConfirmation && _settings.SidebarExpanded == initialSidebar
-                && !SettingsHost.IsEnabled && !PaneToggleButton.IsEnabled
+                && !SettingsHost.IsEnabled && !OverviewTab.IsEnabled && !SettingsTab.IsEnabled
                 && !CleanButton.IsEnabled && !ElevateButton.IsEnabled,
                 "Pending elevation prevents duplicate actions and preference changes before transfer");
         }
         finally { _elevating = false; RefreshOptions(); }
-        Require(SettingsHost.IsEnabled && PaneToggleButton.IsEnabled, "The original interface becomes usable again after unsuccessful elevation");
+        Require(SettingsHost.IsEnabled && OverviewTab.IsEnabled && SettingsTab.IsEnabled, "The original interface becomes usable again after unsuccessful elevation");
         foreach (var scale in new[] { 1.5, 2.0 })
         {
             ReflowMetrics(700, scale);
             RefreshOptions();
-            PaneToggle_Click(PaneToggleButton, new Microsoft.UI.Xaml.RoutedEventArgs());
-            Require(!PaneToggleButton.IsEnabled && _settings.SidebarExpanded == initialSidebar,
-                "Preference refresh and queued clicks preserve the large-text navigation restriction");
+            Require(OverviewTab.IsEnabled && SettingsTab.IsEnabled && _settings.SidebarExpanded == initialSidebar,
+                "Large-text navigation remains usable without rewriting the legacy preference");
         }
         ReflowMetrics(700, 1);
         RefreshOptions();
-        Require(PaneToggleButton.IsEnabled && _settings.SidebarExpanded == initialSidebar,
+        Require(OverviewTab.IsEnabled && SettingsTab.IsEnabled && _settings.SidebarExpanded == initialSidebar,
             "Returning to the normal text scale restores navigation without changing its saved preference");
         using var identity = WindowsIdentity.GetCurrent();
         var sid = identity.User!.Value;

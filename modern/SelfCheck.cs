@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
@@ -55,6 +55,40 @@ public sealed partial class MainWindow
             var settingsTree = SettingsPage;
             EnsureSettingsLoaded();
             Require(ReferenceEquals(settingsTree, SettingsPage), "Settings controls are created once and retained for later visits");
+            Shell.UpdateLayout();
+            var nativeCaptionHeight = AppWindow.TitleBar.Height / Shell.XamlRoot.RasterizationScale;
+            foreach (var header in new FrameworkElement[] { BrandHeader })
+            {
+                var position = header.TransformToVisual(Shell).TransformPoint(new Point());
+                Require(position.Y >= -1 && position.Y + header.ActualHeight <= nativeCaptionHeight + 1
+                    && Math.Abs(position.Y + header.ActualHeight / 2 - nativeCaptionHeight / 2) <= 1,
+                    $"Header aligns with the native caption buttons: {header.Name}, top={position.Y}, height={header.ActualHeight}, captionHeight={nativeCaptionHeight}");
+            }
+            var navigationOrigin = HeaderBar.TransformToVisual(Shell).TransformPoint(new Point());
+            Require(navigationOrigin.Y >= nativeCaptionHeight - 1,
+                "Page navigation stays below the native title bar");
+            Require(OverviewTab.MinHeight == 40 && HeaderBar.MaxWidth == PageContent.MaxWidth,
+                "The compact page navigation shares the content width without title-bar pills");
+            checks.Add("Native branding stays centered; underline navigation sits below the caption and shares the page width.");
+            var originalWindowSize = AppWindow.Size;
+            var windowScale = Shell.XamlRoot.RasterizationScale;
+            SelectPage(true);
+            foreach (var width in new[] { 1120, 1280 })
+            {
+                AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(width * windowScale), originalWindowSize.Height));
+                await Task.Delay(150);
+                Shell.UpdateLayout();
+                var origin = SettingsPage.TransformToVisual(Shell).TransformPoint(new Point());
+                var choice = SettingsPage.LanguageChoice.TransformToVisual(Shell).TransformPoint(new Point());
+                Require(origin.X >= BodyScroll.Padding.Left - 1
+                    && origin.X + SettingsPage.ActualWidth <= Shell.ActualWidth - BodyScroll.Padding.Right + 1
+                    && choice.X + SettingsPage.LanguageChoice.ActualWidth <= Shell.ActualWidth - BodyScroll.Padding.Right + 1,
+                    $"Fresh settings stay visible after resizing the native window: width={width}, left={origin.X}, pageWidth={SettingsPage.ActualWidth}, viewport={Shell.ActualWidth}");
+            }
+            AppWindow.Resize(originalWindowSize);
+            await Task.Delay(150);
+            SelectPage(false);
+            checks.Add("Fresh short-text settings and the right-hand selector stay inside the actual window before and after widening it.");
             var cachedRelease = new AppRelease(new Version(0, 0, 10), new Uri("https://example.invalid/fixture.exe"), new string('0', 64), 100);
             SetReadyUpdate(cachedRelease);
             Require(SettingsPage.UpdateButton.Content?.ToString() == UiText.Get("UpdateInstall")
@@ -125,16 +159,10 @@ public sealed partial class MainWindow
             Require(UiText.Get("PermissionRequired") == (english ? "Cleaning memory requires administrator permission." : "清理内存需要管理员权限。"),
                 "Permission messages are translated");
             Require(SettingsPage.LanguageChoice.Items.Count == 3, "Only supported languages and the system option are listed");
-            Require(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(PaneToggleButton)
-                == (english ? "Toggle navigation layout" : "切换导航布局"), "Navigation layout control has a translated accessible name");
             var savedAreas = _settings.Areas;
-            PaneToggle_Click(PaneToggleButton, new RoutedEventArgs());
-            Require(_settings.SidebarExpanded && NavigationPane.Visibility == Visibility.Visible, "The layout button opens the sidebar");
-            Require(JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(_settings))!.SidebarExpanded, "The navigation preference survives serialization");
-            PaneToggle_Click(PaneToggleButton, new RoutedEventArgs());
-            Require(!_settings.SidebarExpanded && NavigationPanel.Visibility == Visibility.Visible && _settings.Areas == savedAreas,
-                "The layout button restores top navigation without changing cleanup settings");
-            Require(!JsonSerializer.Deserialize<AppSettings>("{}")!.SidebarExpanded, "Existing settings default to top navigation");
+            Require(NavigationPanel.Visibility == Visibility.Visible
+                && !Descendants(Shell).OfType<FrameworkElement>().Any(element => element.Name == "PaneToggleButton" || element.Name == "NavigationPane"),
+                "Only the top navigation remains, with no obsolete sidebar control");
             var selectedLanguage = SettingsPage.LanguageChoice.SelectedIndex;
             SettingsPage.LanguageChoice.SelectedIndex = selectedLanguage == 2 ? 1 : 2;
             var chosenLanguage = selectedLanguage == 2 ? "zh-CN" : "en-US";
@@ -162,27 +190,28 @@ public sealed partial class MainWindow
                 _settings.Theme = theme; ApplyTheme();
                 Require(AppWindow.TitleBar.PreferredTheme == captionTheme, "Caption buttons follow the app theme");
                 await Task.Delay(120);
-                var colorKey = Shell.ActualTheme == ElementTheme.Dark ? "SystemAccentColorLight2" : "SystemAccentColorDark1";
-                Require(CleanButton.Background is SolidColorBrush fill && fill.Color == (Windows.UI.Color)Application.Current.Resources[colorKey],
-                    "The actual cleaning button uses the monochrome app palette");
+                var palette = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[Shell.ActualTheme == ElementTheme.Dark ? "Default" : "Light"];
+                Require(CleanButton.Background is SolidColorBrush fill && fill.Color == ((SolidColorBrush)palette["CleanButtonBrush"]).Color,
+                    "The actual cleaning button follows the approved Jade palette in both themes");
             }
             _settings.Theme = savedTheme; ApplyTheme();
             var displayScale = Shell.XamlRoot.RasterizationScale;
             var buttonRadiusPixels = CleanButton.CornerRadius.TopLeft * displayScale;
-            Require(Math.Abs(buttonRadiusPixels - 10) < 0.01,
-                $"Button radius must be 10 screen pixels; actual={buttonRadiusPixels}, scale={displayScale}");
-            foreach (var card in new[] { MetricsCard, CleanupHistoryCard, CleanCard, SettingsPage.AppearanceCard, SettingsPage.CleanupSettingsCard, SettingsPage.AutoSettingsCard, SettingsPage.AboutCard })
-                Require(Math.Abs(card.CornerRadius.TopLeft * displayScale - 12) < 0.01, "All grouping cards have 12 screen-pixel radii");
-            foreach (var control in new Control[] { OverviewTab, SettingsTab, SidebarOverviewTab, SidebarSettingsTab, PaneToggleButton,
+            Require(Math.Abs(buttonRadiusPixels - 6 * displayScale) < 0.01,
+                $"Primary button radius must be 6 DIPs; actual={buttonRadiusPixels}, scale={displayScale}");
+            Require(MetricsCard.CornerRadius.TopLeft == 10, "The approved overview grouping radius is 10 DIPs");
+            foreach (var card in new[] { SettingsPage.AppearanceCard, SettingsPage.CleanupSettingsCard, SettingsPage.AutoSettingsCard, SettingsPage.AboutCard })
+                Require(Math.Abs(card.CornerRadius.TopLeft - 10) < 0.01, "All grouping cards have the same 10-DIP radii");
+            foreach (var control in new Control[] {
                 ElevateButton, SettingsPage.ThemeChoice, SettingsPage.LanguageChoice, SettingsPage.ThresholdNumber, SettingsPage.IntervalNumber, SettingsPage.SourceLink, SettingsPage.ExitButton, SettingsPage.UpdateButton, SettingsPage.ReleasesLink })
-                Require(Math.Abs(control.CornerRadius.TopLeft * displayScale - 10) < 0.01,
-                    $"Every custom control has 10 screen-pixel radii: {control.Name} at scale {displayScale}");
+                Require(Math.Abs(control.CornerRadius.TopLeft - 6) < 0.01,
+                    $"Every custom control has 6-DIP radii: {control.Name} at scale {displayScale}");
             var presenter = AppWindow.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
             Require(presenter is not null && Math.Abs(presenter.PreferredMinimumWidth.GetValueOrDefault() - 560 * displayScale) <= 1
                 && Math.Abs(presenter.PreferredMinimumHeight.GetValueOrDefault() - 440 * displayScale) <= 1,
                 $"Minimum window size tracks the monitor DPI: {presenter?.PreferredMinimumWidth}x{presenter?.PreferredMinimumHeight} at scale {displayScale}");
-            checks.Add($"Light/dark/system caption themes, physical 12px card / 10px control radii and DPI-tracked minimum window size passed at scale {displayScale}.");
-            checks.Add("Black/white controls, pale gray canvas and compact white grouping cards use the reference palette.");
+            checks.Add($"Light/dark/system caption themes, 10-DIP card / 6-DIP control radii and DPI-tracked minimum window size passed at scale {displayScale}.");
+            checks.Add("The approved split layout uses Radix Slate surfaces and a Jade cleanup action.");
             await CheckTrayGlyphs(directory);
             checks.Add("Tray digits 0/9/99/100 and unavailable '?' rendered at 16/20/24/32px on light/dark backgrounds; 200 refreshes leaked no GDI or USER handles.");
             Require(Marshal.SizeOf<MemoryEngine.MemoryStatus>() == 64, "MEMORYSTATUSEX ABI");
@@ -495,7 +524,7 @@ public sealed partial class MainWindow
             RefreshOptions();
 
             // Layout is measured inside this hidden app window, without inspecting the user's desktop.
-            Require(CleanupHistoryCard.Visibility == Visibility.Collapsed && _cleanupHistory.Count == 0
+            Require(CleanupHistoryCard.Visibility == Visibility.Visible && _cleanupHistory.Count == 0
                 && !CleanupHistoryExpander.IsExpanded, "A new session starts with collapsed cleanup history and no fabricated records");
             for (var index = 0; index < 7; index++)
                 RecordCleanup(true, new CleanupResult((ulong)index * 1024 * 1024, [], CleanAreas.WorkingSets), TimeSpan.FromSeconds(1));
@@ -520,9 +549,9 @@ public sealed partial class MainWindow
             Require(issueY >= AppTitleBar.ActualHeight && IssueBanner.ActualHeight > 0
                 && issueY + IssueBanner.ActualHeight <= bodyY,
                 "Page navigation cannot scroll a critical error out of the visible notification area");
-            Require(Math.Abs(IssueBanner.CornerRadius.TopLeft * displayScale - 12) < 0.01
-                && Math.Abs(AdminBanner.CornerRadius.TopLeft * displayScale - 12) < 0.01,
-                "Global notifications retain the requested 12 screen-pixel corner radius");
+            Require(Math.Abs(IssueBanner.CornerRadius.TopLeft - 10) < 0.01
+                && Math.Abs(AdminBanner.CornerRadius.TopLeft - 10) < 0.01,
+                "Global notifications retain the same 10-DIP corner radius");
             Shell.RequestedTheme = ElementTheme.Dark;
             UpdateStats(memory);
             await WritePreview(directory, "cleanup-failure-dark-fixture.png");
@@ -597,16 +626,14 @@ public sealed partial class MainWindow
             Shell.UpdateLayout();
             foreach (var block in Descendants(Shell).OfType<TextBlock>()) fonts.TryAdd(block, block.FontSize);
             foreach (var control in Descendants(SettingsPage).OfType<Control>()) controlFonts.TryAdd(control, control.FontSize);
-            foreach (var control in new[] { OverviewTab, SettingsTab, SidebarOverviewTab, SidebarSettingsTab }) controlFonts.TryAdd(control, control.FontSize);
+            foreach (var control in new[] { OverviewTab, SettingsTab }) controlFonts.TryAdd(control, control.FontSize);
             var layouts = new List<object>();
             SettingsPage.UpdateButton.Content = UiText.Get("UpdateInstall");
             SettingsPage.UpdateStatus.Text = UiText.Get("UpdateReady");
-            foreach (var sidebar in new[] { false, true })
             foreach (var scale in new[] { 1.0, 1.5, 2.0 })
-            foreach (var width in new[] { 560.0, 680.0, 760.0, 880.0 })
+            foreach (var width in new[] { 560.0, 680.0, 760.0, 880.0, 1120.0, 1440.0 })
             foreach (var settings in new[] { false, true })
             {
-                _settings.SidebarExpanded = sidebar;
                 SelectPage(settings);
                 foreach (var (control, size) in controlFonts) control.FontSize = size * scale;
                 foreach (var (block, size) in fonts) block.FontSize = size * scale;
@@ -617,6 +644,7 @@ public sealed partial class MainWindow
                     {
                         var first = (FrameworkElement)row.Children[0];
                         var second = (FrameworkElement)row.Children[1];
+                        if (second.Visibility != Visibility.Visible) continue;
                         var a = first.TransformToVisual(row).TransformPoint(new Point());
                         var b = second.TransformToVisual(row).TransformPoint(new Point());
                         Require(a.X >= row.Padding.Left - 1 && b.X >= row.Padding.Left - 1
@@ -634,8 +662,10 @@ public sealed partial class MainWindow
                         var upperX = upper.TransformToVisual(SettingsPage.AutoSettingsCard).TransformPoint(new Point()).X;
                         var lowerX = lower.TransformToVisual(SettingsPage.AutoSettingsCard).TransformPoint(new Point()).X;
                         Require(Math.Abs(upperX - lowerX) < 0.5
-                            && (upper is TextBlock || Math.Abs(upper.ActualWidth - lower.ActualWidth) < 0.5),
-                            $"Automatic-cleaning columns: {upper.Name}/{lower.Name}; x={upperX}/{lowerX}, widths={upper.ActualWidth}/{lower.ActualWidth}, width={width}, textScale={scale}, sidebar={sidebar}");
+                            && (upper is TextBlock
+                                ? Math.Abs(upper.Width - lower.Width) < 0.5
+                                : Math.Abs(upper.ActualWidth - lower.ActualWidth) < 0.5),
+                            $"Automatic-cleaning columns: {upper.Name}/{lower.Name}; x={upperX}/{lowerX}, widths={upper.ActualWidth}/{lower.ActualWidth}, width={width}, textScale={scale}");
                         if (upper is NumberBox upperInput)
                         {
                             var lowerInput = (NumberBox)lower;
@@ -647,10 +677,27 @@ public sealed partial class MainWindow
                         }
                     }
                 }
-                Require(NavigationPane.Visibility == (sidebar && scale <= 1.25 ? Visibility.Visible : Visibility.Collapsed),
-                    "The selected navigation mode is preserved, with a larger-text fallback");
-                Require(SidebarOverviewTab.IsChecked == OverviewTab.IsChecked && SidebarSettingsTab.IsChecked == SettingsTab.IsChecked,
-                    "Top and sidebar navigation select the same page");
+                Require(NavigationPanel.Visibility == Visibility.Visible && OverviewTab.IsChecked == !settings && SettingsTab.IsChecked == settings,
+                    "Top navigation remains usable at every supported width and text size");
+                var page = settings ? (FrameworkElement)SettingsPage : OverviewPage;
+                var scrollOrigin = BodyScroll.TransformToVisual(Shell).TransformPoint(new Point());
+                var pageOrigin = page.TransformToVisual(Shell).TransformPoint(new Point());
+                Require(pageOrigin.X >= scrollOrigin.X + BodyScroll.Padding.Left - 1
+                    && pageOrigin.X + page.ActualWidth <= scrollOrigin.X + BodyScroll.ActualWidth - BodyScroll.Padding.Right + 1
+                    && BodyScroll.HorizontalOffset < 1,
+                    $"Page stays within the visible viewport: settings={settings}, width={width}, left={pageOrigin.X}, pageWidth={page.ActualWidth}, viewport={BodyScroll.ActualWidth}");
+                if (settings)
+                {
+                    foreach (var control in new FrameworkElement[] { SettingsPage.LanguageChoice, SettingsPage.ThemeChoice,
+                        SettingsPage.PinSwitch, SettingsPage.TraySwitch, SettingsPage.StartupSwitch,
+                        SettingsPage.ThresholdNumber, SettingsPage.IntervalNumber, SettingsPage.ThresholdSwitch, SettingsPage.IntervalSwitch })
+                    {
+                        var position = control.TransformToVisual(Shell).TransformPoint(new Point());
+                        Require(position.X >= scrollOrigin.X + BodyScroll.Padding.Left - 1
+                            && position.X + control.ActualWidth <= scrollOrigin.X + BodyScroll.ActualWidth - BodyScroll.Padding.Right + 1,
+                            $"Settings control stays visible: {control.Name}, width={width}, left={position.X}, controlWidth={control.ActualWidth}");
+                    }
+                }
                 var checkedText = 0;
                 foreach (var block in Descendants(settings ? SettingsPage : OverviewPage).OfType<TextBlock>())
                 {
@@ -676,9 +723,9 @@ public sealed partial class MainWindow
                         $"Vertical overflow: {block.Text}; width={width}, scale={scale}, actual={block.ActualWidth}x{block.ActualHeight}, desired={probe.DesiredSize}, font={block.FontSize}, language={block.Language}");
                 }
                 Require(checkedText >= 8, "Actual page text was measured");
-                layouts.Add(new { width, textScale = scale, sidebar, page = settings ? "settings" : "memory", checkedText });
+                layouts.Add(new { width, textScale = scale, page = settings ? "settings" : "memory", checkedText });
             }
-            checks.Add("48 memory/settings layout cases passed in both navigation modes, at widths 560/680/760/880 and text sizes 100/150/200%.");
+            checks.Add("36 memory/settings layout cases passed with top navigation, at widths 560/680/760/880/1120/1440 and text sizes 100/150/200%.");
             checks.Add("Automatic-cleaning inputs, units and switches align in all settings layout cases.");
             foreach (var (control, size) in controlFonts) control.FontSize = size;
             foreach (var (block, size) in fonts) block.FontSize = size;
@@ -686,8 +733,8 @@ public sealed partial class MainWindow
             CleanDescription.Text = originalCleanDescription;
             _cleanupHistory.Clear();
             CleanupHistoryExpander.IsExpanded = false;
-            CleanupHistoryCard.Visibility = Visibility.Collapsed;
-            _settings.SidebarExpanded = false;
+            CleanupHistoryCard.Visibility = Visibility.Visible;
+            CleanupHistoryEmpty.Visibility = Visibility.Visible;
             Layout(700, 560, 1);
             SelectPage(true);
             BodyScroll.ChangeView(null, BodyScroll.ScrollableHeight, null, true);
@@ -789,13 +836,9 @@ public sealed partial class MainWindow
             _ = CreateCleanupDialog(false, out var repeatChoice);
             Require(repeatChoice is null, "Later confirmations do not repeat onboarding");
             checks.Add("First tray cleanup introduction, safe cancellation, preference persistence and settings synchronization passed without cleaning or authorization.");
-            _settings.SidebarExpanded = true;
             SelectPage(false); Layout(760, 600, 1);
-            await WritePreview(directory, "memory-sidebar.png");
             SelectPage(true); Layout(760, 900, 1);
-            await WritePreview(directory, "settings-sidebar.png");
             Shell.RequestedTheme = ElementTheme.Dark;
-            _settings.SidebarExpanded = false;
             SelectPage(false); Layout(700, 520, 1);
             await CheckUpdateNoticeAsync(directory);
             await WritePreview(directory, "memory-dark.png");

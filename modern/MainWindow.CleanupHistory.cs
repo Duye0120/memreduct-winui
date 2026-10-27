@@ -12,6 +12,11 @@ public sealed partial class MainWindow
     private void RecordCleanup(bool manual, CleanupResult? result, TimeSpan duration, string? failure = null)
     {
         if (_exitRequested) return;
+        LastCleanupValue.Text = result is not null && result.CompletedAreas != CleanAreas.None
+            ? MemorySnapshot.Bytes(result.FreedBytes) : "—";
+        LastCleanupValue.Visibility = Visibility.Visible;
+        LastCleanupTime.Text = UiText.Get(manual ? "CleanupSummaryManual" : "CleanupSummaryAutomatic", DateTime.Now);
+        CleanupHistoryEmpty.Visibility = Visibility.Collapsed;
         var outcome = UiText.Get(CleanupOutcomeKey(result));
         var details = result is null || result.CompletedAreas == CleanAreas.None
             ? UiText.Get("CleanupHistoryFailure", duration.TotalSeconds, result is null ? failure ?? UiText.Get("CleanupFailed") : string.Join("\n", result.Errors))

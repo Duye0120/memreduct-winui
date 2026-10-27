@@ -1,4 +1,4 @@
-<Application x:Class="MemReduct.Fluent.App"
+﻿<Application x:Class="MemReduct.Fluent.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
@@ -8,29 +8,55 @@
             </ResourceDictionary.MergedDictionaries>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
-                    <SolidColorBrush x:Key="CanvasBrush" Color="#F5F5F7" />
-                    <SolidColorBrush x:Key="NavigationBrush" Color="#F5F5F7" />
-                    <SolidColorBrush x:Key="SurfaceBrush" Color="White" />
-                    <SolidColorBrush x:Key="OutlineBrush" Color="#E2E2E9" />
-                    <SolidColorBrush x:Key="MutedBrush" Color="#6F707C" />
-                    <Color x:Key="InputFillColor">#F0F0F4</Color>
-                    <SolidColorBrush x:Key="AccentBrush" Color="#303030" />
-                    <Color x:Key="NavigationSelectedColor">#FFFFFF</Color>
-                    <Color x:Key="NavigationHoverColor">#EDEDF2</Color>
-                    <Color x:Key="NavigationTextColor">#202020</Color>
-                </ResourceDictionary>
+                    <SolidColorBrush x:Key="CanvasBrush" Color="#F9F9FB" />
+                    <SolidColorBrush x:Key="NavigationBrush" Color="#F9F9FB" />
+                    <SolidColorBrush x:Key="SurfaceBrush" Color="#FCFCFD" />
+                    <SolidColorBrush x:Key="OutlineBrush" Color="#D9D9E0" />
+                    <SolidColorBrush x:Key="MutedBrush" Color="#60646C" />
+                    <Color x:Key="InputFillColor">#F0F0F3</Color>
+                    <SolidColorBrush x:Key="AccentBrush" Color="#29A383" />
+                    <Color x:Key="NavigationSelectedColor">#E6F7ED</Color>
+                    <Color x:Key="NavigationHoverColor">#D6F1E3</Color>
+                    <Color x:Key="NavigationTextColor">#1C2024</Color>
+                                    <SolidColorBrush x:Key="InkBrush" Color="#1C2024" />
+                    <SolidColorBrush x:Key="ActionWellBrush" Color="#F4FBF7" />
+                    <SolidColorBrush x:Key="CleanButtonBrush" Color="#208368" />
+                    <SolidColorBrush x:Key="CleanOnAccentBrush" Color="#FBFEFD" />
+                    <SolidColorBrush x:Key="CleanHoverBrush" Color="#26997B" />
+                    <SolidColorBrush x:Key="CleanPressedBrush" Color="#1D3B31" />
+                    <SolidColorBrush x:Key="MeterTrackBrush" Color="#E8E8EC" />
+                    <SolidColorBrush x:Key="UsageNormalBrush" Color="#29A383" />
+                    <SolidColorBrush x:Key="UsageElevatedBrush" Color="#FFC53D" />
+                    <SolidColorBrush x:Key="UsageHighBrush" Color="#E5484D" />
+                    <SolidColorBrush x:Key="UsageNormalTextBrush" Color="#208368" />
+                    <SolidColorBrush x:Key="UsageElevatedTextBrush" Color="#AB6400" />
+                    <SolidColorBrush x:Key="UsageHighTextBrush" Color="#CE2C31" />
+</ResourceDictionary>
                 <ResourceDictionary x:Key="Default">
-                    <SolidColorBrush x:Key="CanvasBrush" Color="#202024" />
-                    <SolidColorBrush x:Key="NavigationBrush" Color="#202024" />
-                    <SolidColorBrush x:Key="SurfaceBrush" Color="#29292E" />
-                    <SolidColorBrush x:Key="OutlineBrush" Color="#3C3C46" />
-                    <SolidColorBrush x:Key="MutedBrush" Color="#A4A4B1" />
-                    <Color x:Key="InputFillColor">#36363F</Color>
+                    <SolidColorBrush x:Key="CanvasBrush" Color="#111113" />
+                    <SolidColorBrush x:Key="NavigationBrush" Color="#111113" />
+                    <SolidColorBrush x:Key="SurfaceBrush" Color="#18191B" />
+                    <SolidColorBrush x:Key="OutlineBrush" Color="#363A3F" />
+                    <SolidColorBrush x:Key="MutedBrush" Color="#B0B4BA" />
+                    <Color x:Key="InputFillColor">#272A2D</Color>
                     <SolidColorBrush x:Key="AccentBrush" Color="#E8E8E8" />
-                    <Color x:Key="NavigationSelectedColor">#33333B</Color>
-                    <Color x:Key="NavigationHoverColor">#303037</Color>
-                    <Color x:Key="NavigationTextColor">#EEEEEE</Color>
-                </ResourceDictionary>
+                    <Color x:Key="NavigationSelectedColor">#0F2E22</Color>
+                    <Color x:Key="NavigationHoverColor">#0B3B2C</Color>
+                    <Color x:Key="NavigationTextColor">#EDEEF0</Color>
+                                    <SolidColorBrush x:Key="InkBrush" Color="#EDEEF0" />
+                    <SolidColorBrush x:Key="ActionWellBrush" Color="#0F2E22" />
+                    <SolidColorBrush x:Key="CleanButtonBrush" Color="#ADF0D4" />
+                    <SolidColorBrush x:Key="CleanOnAccentBrush" Color="#0D1512" />
+                    <SolidColorBrush x:Key="CleanHoverBrush" Color="#1FD8A4" />
+                    <SolidColorBrush x:Key="CleanPressedBrush" Color="#29A383" />
+                    <SolidColorBrush x:Key="MeterTrackBrush" Color="#272A2D" />
+                    <SolidColorBrush x:Key="UsageNormalBrush" Color="#29A383" />
+                    <SolidColorBrush x:Key="UsageElevatedBrush" Color="#FFC53D" />
+                    <SolidColorBrush x:Key="UsageHighBrush" Color="#E5484D" />
+                    <SolidColorBrush x:Key="UsageNormalTextBrush" Color="#1FD8A4" />
+                    <SolidColorBrush x:Key="UsageElevatedTextBrush" Color="#FFCA16" />
+                    <SolidColorBrush x:Key="UsageHighTextBrush" Color="#FF9592" />
+</ResourceDictionary>
                 <ResourceDictionary x:Key="HighContrast">
                     <SolidColorBrush x:Key="CanvasBrush" Color="{ThemeResource SystemColorWindowColor}" />
                     <SolidColorBrush x:Key="NavigationBrush" Color="{ThemeResource SystemColorWindowColor}" />
@@ -42,26 +68,41 @@
                     <StaticResource x:Key="NavigationHoverColor" ResourceKey="SystemColorHighlightColor" />
                     <StaticResource x:Key="NavigationTextColor" ResourceKey="SystemColorHighlightTextColor" />
                     <StaticResource x:Key="InputFillColor" ResourceKey="SystemColorWindowColor" />
-                </ResourceDictionary>
+                                    <SolidColorBrush x:Key="InkBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="ActionWellBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="CleanButtonBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="CleanOnAccentBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+                    <SolidColorBrush x:Key="CleanHoverBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="CleanPressedBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="MeterTrackBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="UsageNormalBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="UsageElevatedBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="UsageHighBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="UsageNormalTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="UsageElevatedTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="UsageHighTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+</ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
-            <Color x:Key="SystemAccentColor">#303030</Color>
-            <Color x:Key="SystemAccentColorDark1">#171717</Color>
-            <Color x:Key="SystemAccentColorDark2">#101010</Color>
-            <Color x:Key="SystemAccentColorDark3">#080808</Color>
-            <Color x:Key="SystemAccentColorLight1">#D4D4D4</Color>
-            <Color x:Key="SystemAccentColorLight2">#F2F2F2</Color>
-            <Color x:Key="SystemAccentColorLight3">#FAFAFA</Color>
+            <Color x:Key="SystemAccentColor">#29A383</Color>
+            <Color x:Key="SystemAccentColorDark1">#208368</Color>
+            <Color x:Key="SystemAccentColorDark2">#1D3B31</Color>
+            <Color x:Key="SystemAccentColorDark3">#1D3B31</Color>
+            <Color x:Key="SystemAccentColorLight1">#D6F1E3</Color>
+            <Color x:Key="SystemAccentColorLight2">#ADF0D4</Color>
+            <Color x:Key="SystemAccentColorLight3">#F4FBF7</Color>
             <FontFamily x:Key="ContentControlThemeFontFamily">Segoe UI Variable</FontFamily>
-            <CornerRadius x:Key="AppControlCornerRadius">10</CornerRadius>
-            <CornerRadius x:Key="CardCornerRadius">12</CornerRadius>
+            <CornerRadius x:Key="AppControlCornerRadius">6</CornerRadius>
+            <CornerRadius x:Key="CardCornerRadius">10</CornerRadius>
+            <x:Double x:Key="TitleBarCompactHeight">32</x:Double>
+            <x:Double x:Key="TitleBarExpandedHeight">32</x:Double>
+            <x:Double x:Key="TitleBarMinDragRegionWidth">0</x:Double>
             <!-- Shared spacing tiers; insets stay together for subsequent content changes. -->
             <x:Double x:Key="Space8">8</x:Double>
             <x:Double x:Key="Space12">12</x:Double>
             <x:Double x:Key="Space16">16</x:Double>
             <x:Double x:Key="Space20">20</x:Double>
-            <x:Double x:Key="SidebarWidth">200</x:Double>
             <Thickness x:Key="PageInset">16,4,16,16</Thickness>
-            <Thickness x:Key="RowInset">16,12</Thickness>
+            <Thickness x:Key="RowInset">12,8</Thickness>
             <Thickness x:Key="MetricInset">16</Thickness>
             <SolidColorBrush x:Key="ComboBoxBackground" Color="{ThemeResource InputFillColor}" />
             <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="{ThemeResource InputFillColor}" />
@@ -69,20 +110,27 @@
             <SolidColorBrush x:Key="TextControlBackground" Color="{ThemeResource InputFillColor}" />
             <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
             <Style x:Key="NavigationButton" TargetType="ToggleButton">
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="BorderBrush" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                <Setter Property="HorizontalAlignment" Value="Stretch" />
-                <Setter Property="Padding" Value="12,4" />
-                <Setter Property="MinHeight" Value="28" />
-                <Setter Property="MinWidth" Value="64" />
-                <Setter Property="FontSize" Value="13" />
-            </Style>
-            <Style x:Key="SidebarButton" TargetType="ToggleButton" BasedOn="{StaticResource NavigationButton}">
-                <Setter Property="HorizontalContentAlignment" Value="Left" />
-                <Setter Property="Padding" Value="36,6,12,6" />
-                <Setter Property="MinHeight" Value="32" />
+                <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+                <Setter Property="MinHeight" Value="40" /><Setter Property="MinWidth" Value="40" /><Setter Property="Padding" Value="0" /><Setter Property="FontSize" Value="14" />
+                <Setter Property="Foreground" Value="{ThemeResource MutedBrush}" />
+                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToggleButton">
+                    <Grid x:Name="NavigationRoot" Background="Transparent">
+                        <VisualStateManager.VisualStateGroups><VisualStateGroup x:Name="CommonStates">
+                            <VisualState x:Name="Normal" />
+                            <VisualState x:Name="PointerOver"><VisualState.Setters><Setter Target="NavigationContent.Foreground" Value="{ThemeResource AccentBrush}" /></VisualState.Setters></VisualState>
+                            <VisualState x:Name="Pressed"><VisualState.Setters><Setter Target="NavigationRoot.Opacity" Value="0.7" /></VisualState.Setters></VisualState>
+                            <VisualState x:Name="Disabled"><VisualState.Setters><Setter Target="NavigationRoot.Opacity" Value="0.5" /></VisualState.Setters></VisualState>
+                            <VisualState x:Name="Checked"><VisualState.Setters><Setter Target="NavigationUnderline.Visibility" Value="Visible" /><Setter Target="NavigationContent.Foreground" Value="{ThemeResource InkBrush}" /></VisualState.Setters></VisualState>
+                            <VisualState x:Name="CheckedPointerOver"><VisualState.Setters><Setter Target="NavigationUnderline.Visibility" Value="Visible" /><Setter Target="NavigationContent.Foreground" Value="{ThemeResource AccentBrush}" /></VisualState.Setters></VisualState>
+                            <VisualState x:Name="CheckedPressed"><VisualState.Setters><Setter Target="NavigationUnderline.Visibility" Value="Visible" /><Setter Target="NavigationRoot.Opacity" Value="0.7" /></VisualState.Setters></VisualState>
+                            <VisualState x:Name="CheckedDisabled"><VisualState.Setters><Setter Target="NavigationUnderline.Visibility" Value="Visible" /><Setter Target="NavigationRoot.Opacity" Value="0.5" /></VisualState.Setters></VisualState>
+                        </VisualStateGroup></VisualStateManager.VisualStateGroups>
+                        <Grid HorizontalAlignment="Left">
+                            <ContentPresenter x:Name="NavigationContent" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" VerticalAlignment="Center" />
+                            <Border x:Name="NavigationUnderline" Height="2" VerticalAlignment="Bottom" Background="{ThemeResource AccentBrush}" Visibility="Collapsed" />
+                        </Grid>
+                    </Grid>
+                </ControlTemplate></Setter.Value></Setter>
             </Style>
             <Style x:Key="IconButton" TargetType="Button">
                 <Setter Property="Background" Value="Transparent" />
@@ -93,7 +141,7 @@
             </Style>
             <Style x:Key="SettingRow" TargetType="Grid">
                 <Setter Property="BorderBrush" Value="{ThemeResource OutlineBrush}" />
-                <Setter Property="BorderThickness" Value="0,0,0,1" />
+                <Setter Property="BorderThickness" Value="0,0,0,0.5" />
                 <Setter Property="Padding" Value="{StaticResource RowInset}" />
                 <Setter Property="ColumnSpacing" Value="{StaticResource Space12}" />
                 <Setter Property="MinHeight" Value="48" />
@@ -101,18 +149,22 @@
             <Style x:Key="Card" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource SurfaceBrush}" />
                 <Setter Property="BorderBrush" Value="{ThemeResource OutlineBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderThickness" Value="0.5" />
                 <Setter Property="CornerRadius" Value="{StaticResource CardCornerRadius}" />
                 <Setter Property="Padding" Value="0" />
             </Style>
             <Style x:Key="Body" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontSize" Value="14" />
                 <Setter Property="TextWrapping" Value="Wrap" />
-                <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource InkBrush}" />
                 <Setter Property="FontFamily" Value="{StaticResource ContentControlThemeFontFamily}" />
             </Style>
+            <Style x:Key="SectionHeading" TargetType="TextBlock" BasedOn="{StaticResource Body}">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
             <Style x:Key="Muted" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontSize" Value="14" />
                 <Setter Property="TextWrapping" Value="Wrap" />
                 <Setter Property="Foreground" Value="{ThemeResource MutedBrush}" />
                 <Setter Property="FontFamily" Value="{StaticResource ContentControlThemeFontFamily}" />

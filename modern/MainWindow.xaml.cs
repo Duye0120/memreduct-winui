@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
@@ -26,7 +26,6 @@ public sealed partial class MainWindow : Window
     private SettingsView SettingsPage { get; set; } = null!;
     private bool _startupReadable = true;
     private bool _statsStacked;
-    private bool _sidebarAvailable = true;
     private double _cornerScale;
     private DateTimeOffset _lastAttempt;
     private DateTimeOffset? _lastReadUtc;
@@ -59,11 +58,12 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
         var handle = WinRT.Interop.WindowNative.GetWindowHandle(this);
         var scale = GetDpiForWindow(handle) / 96.0;
-        AppWindow.Resize(new SizeInt32((int)(700 * scale), (int)(560 * scale)));
+        AppWindow.Resize(new SizeInt32((int)(960 * scale), (int)(520 * scale)));
         UpdatePresenterConstraints(scale);
         UpdateCornerRadii();
         ResultText.Text = _settings.LastCleanUtc is { } lastClean
             ? UiText.Get("LastClean", lastClean.ToLocalTime()) : UiText.Get("NeverCleaned");
+        LastCleanupTime.Text = ResultText.Text;
         ApplyTheme();
         SelectPage(false);
         if (!checking)
@@ -104,14 +104,9 @@ public sealed partial class MainWindow : Window
         Closed += (_, _) => { PrepareToExit(); StopMetricsAnimation(); _timer?.Stop(); _animationTimer?.Stop(); _tray?.Dispose(); ((App)Application.Current).Finish(); };
         Shell.Loaded += async (_, _) =>
         {
+            Title = _checking ? "Mem Reduct 界面预览" : "Mem Reduct";
             if (!_checking && Installation.IsInstalled) await RefreshHelperAsync(startTask: true);
             if (_exitRequested) return;
-            foreach (var button in new[] { OverviewTab, SettingsTab, SidebarOverviewTab, SidebarSettingsTab })
-            {
-                var shadow = new Microsoft.UI.Xaml.Media.ThemeShadow();
-                shadow.Receivers.Add(button == OverviewTab || button == SettingsTab ? TopShadowReceiver : SidebarShadowReceiver);
-                button.Shadow = shadow;
-            }
             UpdateCornerRadii();
             Shell.XamlRoot.Changed -= XamlRoot_Changed;
             Shell.XamlRoot.Changed += XamlRoot_Changed;
@@ -166,7 +161,7 @@ public sealed partial class MainWindow : Window
 
     private void LoadSettings()
     {
-        SettingsPage.VersionText.Text = "Mem Reduct Fluent · " + UpdateService.DisplayVersion;
+        SettingsPage.VersionText.Text = "Mem Reduct  " + UpdateService.DisplayVersion;
         SettingsPage.StartupSwitch.IsOn = _startupEnabled;
         SettingsPage.StartupSwitch.IsEnabled = _startupReadable;
         SettingsPage.ThemeChoice.SelectedIndex = _settings.Theme == "Light" ? 1 : _settings.Theme == "Dark" ? 2 : 0;
@@ -231,18 +226,21 @@ public sealed partial class MainWindow : Window
         if (Shell.XamlRoot is null) return;
         var scale = Shell.XamlRoot.RasterizationScale;
         if (_cornerScale == scale) return;
-        // The requested radii are screen pixels, while WinUI measures CornerRadius in DIPs.
-        var cardRadius = new CornerRadius(12 / scale);
-        var controlRadius = new CornerRadius(10 / scale);
-        foreach (var card in new[] { MetricsCard, CleanupHistoryCard, CleanCard, SettingsPage?.AppearanceCard, SettingsPage?.CleanupSettingsCard, SettingsPage?.AutoSettingsCard, SettingsPage?.AboutCard })
+        var cardRadius = new CornerRadius(10);
+        var controlRadius = new CornerRadius(6);
+        foreach (var card in new[] { SettingsPage?.AppearanceCard, SettingsPage?.CleanupSettingsCard, SettingsPage?.AutoSettingsCard, SettingsPage?.AboutCard })
             if (card is not null) card.CornerRadius = cardRadius;
         IssueBanner.CornerRadius = AdminBanner.CornerRadius = UpdateNotice.CornerRadius = cardRadius;
-        CleanupHistoryExpander.CornerRadius = cardRadius;
-        foreach (var control in new Control?[] { OverviewTab, SettingsTab, SidebarOverviewTab, SidebarSettingsTab, PaneToggleButton,
-            CleanButton, ElevateButton, SettingsPage?.ThemeChoice, SettingsPage?.LanguageChoice,
+        CleanupHistoryExpander.CornerRadius = ProcessesExpander.CornerRadius = new CornerRadius(0);
+        MetricsCard.CornerRadius = cardRadius;
+        CleanCard.CornerRadius = _statsStacked ? new CornerRadius(0, 0, 10, 10) : new CornerRadius(0, 10, 10, 0);
+        foreach (var control in new Control?[] {
+            ElevateButton, SettingsPage?.ThemeChoice, SettingsPage?.LanguageChoice,
             SettingsPage?.ThresholdNumber, SettingsPage?.IntervalNumber, SettingsPage?.SourceLink, SettingsPage?.ExitButton, SettingsPage?.UpdateButton, SettingsPage?.ReleasesLink, SettingsPage?.AdvancedCleanup,
-            ProcessesExpander, ProcessRefreshButton })
+            ProcessRefreshButton })
             if (control is not null) control.CornerRadius = controlRadius;
+        CleanButton.CornerRadius = controlRadius;
+        OverviewTab.CornerRadius = SettingsTab.CornerRadius = new CornerRadius(0);
         _cornerScale = scale;
     }
 
@@ -250,7 +248,7 @@ public sealed partial class MainWindow : Window
     {
         if (_exitRequested) return;
         SettingsHost.IsEnabled = !_elevating;
-        PaneToggleButton.IsEnabled = _sidebarAvailable && !_elevating;
+        OverviewTab.IsEnabled = SettingsTab.IsEnabled = !_elevating;
         if (AppWindow.Presenter is OverlappedPresenter presenter) presenter.IsAlwaysOnTop = _settings.AlwaysOnTop;
         if (SettingsPage is not null)
         {
@@ -275,12 +273,13 @@ public sealed partial class MainWindow : Window
         if (_settings.AutoThreshold) modes.Add(UiText.Get("ThresholdMode", _settings.Threshold));
         if (_settings.AutoInterval) modes.Add(UiText.Get("IntervalMode", _settings.IntervalMinutes));
         AutoStatusText.Text = modes.Count == 0 ? UiText.Get("AutoOff") :
-            UiText.Get("AutoModes", string.Join(" / ", modes)) + (AdminBanner.IsOpen ? UiText.Get("WaitingPermission") : "");
+            UiText.Get("AutoModes", string.Join(UiText.Get("AutoModeJoin"), modes)) + (AdminBanner.IsOpen ? UiText.Get("WaitingPermission") : "");
         if (_settings.Areas == CleanAreas.None) AutoStatusText.Text = UiText.Get("SelectArea");
         else if (modes.Count != 0 && _settings.AutomaticAreas == CleanAreas.None) AutoStatusText.Text = UiText.Get("ManualOnlyAuto");
         else if (_settings.AutoThreshold && _thresholdRetryAfter > DateTimeOffset.UtcNow)
             AutoStatusText.Text += UiText.Get("ThresholdRetryDeferred");
         if (_gameActive) AutoStatusText.Text = UiText.Get("GameModeActive");
+        ProtectionStatusText.Text = _settings.GameMode ? UiText.Get("FullscreenPauseLabel") : "";
     }
 
     private int AdvancedCleanupCount() => System.Numerics.BitOperations.PopCount((uint)(_settings.Areas
@@ -289,22 +288,22 @@ public sealed partial class MainWindow : Window
     internal void ReflowMetrics(double width, double textScale)
     {
         if (_exitRequested) return;
-        _sidebarAvailable = textScale <= 1.25;
-        var sidebar = _settings.SidebarExpanded && _sidebarAvailable;
-        NavigationColumn.Width = new GridLength(sidebar ? (double)Application.Current.Resources["SidebarWidth"] : 0);
-        NavigationPane.Visibility = sidebar ? Visibility.Visible : Visibility.Collapsed;
-        NavigationPanel.Visibility = sidebar ? Visibility.Collapsed : Visibility.Visible;
-        HeaderBreadcrumb.Visibility = sidebar ? Visibility.Visible : Visibility.Collapsed;
-        PaneToggleButton.IsEnabled = _sidebarAvailable && !_elevating;
-        var pageInset = (Thickness)Application.Current.Resources["PageInset"];
-        var inset = (double)Application.Current.Resources["Space16"];
+        var availableWidth = width;
+        var gutter = availableWidth >= 700 ? 20 : 16;
+        BodyScroll.Padding = new Thickness(gutter, 0, gutter, 16);
+        NavigationGutter.Margin = new Thickness(gutter, 0, gutter, 12);
+        NotificationScroll.Margin = new Thickness(gutter, 0, gutter, 0);
+        var pageInset = BodyScroll.Padding;
+        BrandHeader.Margin = new Thickness(gutter - 2, 0, 0, 0);
+        BrandName.Visibility = width < 760 * textScale ? Visibility.Collapsed : Visibility.Visible;
+        AppTitleBar.Height = Math.Max(32, 28 * textScale);
         if (SettingsPage is not null)
         {
-            SettingsPage.ThresholdNumber.Width = SettingsPage.IntervalNumber.Width = 112 * textScale;
+            SettingsPage.ThresholdNumber.Width = SettingsPage.IntervalNumber.Width = 96 * textScale;
             SettingsPage.ThresholdUnit.Width = SettingsPage.IntervalUnit.Width = 32 * textScale;
             SettingsPage.LanguageChoice.MinWidth = SettingsPage.ThemeChoice.MinWidth = 144 * textScale;
-            var compactAbout = width - pageInset.Left - pageInset.Right - NavigationColumn.Width.Value < 500 * textScale;
-            foreach (var control in new FrameworkElement[] { SettingsPage.UpdateButton, SettingsPage.ReleasesLink, SettingsPage.ExitButton })
+            var compactAbout = width - pageInset.Left - pageInset.Right < 500 * textScale;
+            foreach (var control in new FrameworkElement[] { SettingsPage.UpdateButton, SettingsPage.SourceLink, SettingsPage.ExitButton })
             {
                 Grid.SetRow(control, compactAbout ? 1 : 0);
                 Grid.SetColumn(control, compactAbout ? 0 : 1);
@@ -316,17 +315,33 @@ public sealed partial class MainWindow : Window
                 row.RowSpacing = compactAbout ? (double)Application.Current.Resources["Space12"] : 0;
             }
         }
-        var stacked = width - pageInset.Left - pageInset.Right - NavigationColumn.Width.Value < 3 * 140 * textScale;
-        if (stacked == _statsStacked) return;
+        var contentWidth = Math.Min(920, availableWidth - pageInset.Left - pageInset.Right);
+        var stacked = contentWidth < 700 * textScale;
+        var readingWidth = contentWidth - (stacked ? 0 : 224 * textScale) - 32;
+        var compactDetails = readingWidth < 500 * textScale;
+        MetricsDetails.RowSpacing = compactDetails ? 8 : 0;
+        Grid.SetRow(CacheCell, compactDetails ? 1 : 0);
+        Grid.SetColumn(CacheCell, compactDetails ? 0 : 1);
+        Grid.SetColumnSpan(CommitCell, compactDetails ? 2 : 1);
+        Grid.SetColumnSpan(CacheCell, compactDetails ? 2 : 1);
         _statsStacked = stacked;
-        MetricsGrid.ColumnDefinitions.Clear(); MetricsGrid.RowDefinitions.Clear();
-        for (var i = 0; i < (stacked ? 1 : 3); i++) MetricsGrid.ColumnDefinitions.Add(new ColumnDefinition());
-        for (var i = 0; i < (stacked ? 3 : 1); i++) MetricsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var cells = new FrameworkElement[] { PhysicalCell, CommitCell, CacheCell };
-        for (var i = 0; i < cells.Length; i++) { Grid.SetColumn(cells[i], stacked ? 0 : i); Grid.SetRow(cells[i], stacked ? i : 0); }
-        CommitCell.BorderThickness = stacked ? new Thickness(0, 1, 0, 1) : new Thickness(1, 0, 1, 0);
-        CommitCell.Margin = stacked ? new Thickness(inset, 0, inset, 0) : new Thickness(0, inset, 0, inset);
-        CommitStack.Padding = stacked ? new Thickness(0, inset, 0, inset) : new Thickness(inset, 0, inset, 0);
+        MetricsGrid.ColumnDefinitions[1].Width = stacked ? new GridLength(0) : new GridLength(224 * textScale);
+        Grid.SetRow(CleanCard, stacked ? 1 : 0);
+        Grid.SetColumn(CleanCard, stacked ? 0 : 1);
+        CleanCard.BorderThickness = stacked ? new Thickness(0, 0.5, 0, 0) : new Thickness(0.5, 0, 0, 0);
+        CleanCard.Padding = new Thickness(16);
+        var radius = MetricsCard.CornerRadius.TopLeft;
+        CleanCard.CornerRadius = stacked ? new CornerRadius(0, 0, radius, radius) : new CornerRadius(0, radius, radius, 0);
+        PhysicalCell.Padding = new Thickness(16);
+        foreach (var fact in new[] { UsedFact, FreeFact, TotalFact })
+        {
+            fact.Orientation = stacked ? Orientation.Vertical : Orientation.Horizontal;
+            fact.Spacing = stacked ? 4 : 8;
+        }
+        var compactPlan = contentWidth < 620 * textScale;
+        Grid.SetRow(ProtectionStatusText, compactPlan ? 1 : 0);
+        Grid.SetColumn(ProtectionStatusText, compactPlan ? 0 : 1);
+        Grid.SetColumnSpan(AutoStatusText, compactPlan ? 2 : 1);
     }
 
     private void Sample()
@@ -365,7 +380,8 @@ public sealed partial class MainWindow : Window
     {
         var wasFailed = _sampleFailed;
         _sampleFailed = failed;
-        MonitoringStatus.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
+        MonitoringStatus.Visibility = failed && OverviewPage.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+        PressureText.Visibility = !failed && OverviewPage.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
         if (failed) StopMetricsAnimation();
         if (wasFailed != failed)
         {
@@ -428,8 +444,8 @@ public sealed partial class MainWindow : Window
         if (_feedback != CleanupFeedback.Cleaning && Environment.TickCount64 >= _feedbackUntil) _feedback = CleanupFeedback.None;
         var status = _feedback != CleanupFeedback.None ? _feedbackText
             : UiText.Get(_sampleFailed ? "MonitoringUnavailable" : _gameActive ? "GameModeActive" : _lastPercent >= 90 ? "MemoryCritical" : _lastPercent >= 70 ? "MemoryWarning" : "MemoryNormal");
-        if (_sampleFailed && _feedback != CleanupFeedback.None) status = UiText.Get("MonitoringUnavailable") + " · " + status;
-        if (_gameActive && (_feedback != CleanupFeedback.None || _sampleFailed)) status += " · " + UiText.Get("GameModeActive");
+        if (_sampleFailed && _feedback != CleanupFeedback.None) status = UiText.Get("MonitoringUnavailable") + "  " + status;
+        if (_gameActive && (_feedback != CleanupFeedback.None || _sampleFailed)) status += "  " + UiText.Get("GameModeActive");
         return (_sampleFailed ? null : _lastPercent,
             _sampleFailed && _feedback != CleanupFeedback.Cleaning ? CleanupFeedback.Failed : _feedback,
             status, _feedback == CleanupFeedback.Cleaning ? _animationFrame : -1);
@@ -454,21 +470,25 @@ public sealed partial class MainWindow : Window
     internal void UpdateStats(MemorySnapshot snapshot)
     {
         SetText(PressureText, UiText.Get(_metricsCleaning ? "Cleaning" : snapshot.PhysicalPercent >= 90 ? "PressureHigh" : snapshot.PhysicalPercent >= 70 ? "PressureElevated" : "PressureNormal"));
-        SetText(PhysicalFree, UiText.Get("AvailableMemory", MemorySnapshot.Bytes(snapshot.PhysicalAvailable)));
-        SetText(PhysicalTotal, UiText.Get("TotalMemory", MemorySnapshot.Bytes(snapshot.PhysicalTotal)));
+        SetText(PhysicalUsed, MemorySnapshot.Bytes(snapshot.PhysicalTotal - snapshot.PhysicalAvailable));
+        SetText(PhysicalFree, MemorySnapshot.Bytes(snapshot.PhysicalAvailable));
+        SetText(PhysicalTotal, MemorySnapshot.Bytes(snapshot.PhysicalTotal));
         SetText(CommitUsed, UiText.Get("CommittedMemory", MemorySnapshot.Bytes(snapshot.CommitUsed)));
         SetText(CommitTotal, UiText.Get("CommitLimit", MemorySnapshot.Bytes(snapshot.CommitLimit)));
         SetText(CachePeak, snapshot.CachePeak is { } peak ? UiText.Get("PeakMemory", MemorySnapshot.Bytes(peak)) : UiText.Get("PeakUnavailable"));
         UpdatePhysicalColor(snapshot.PhysicalPercent);
-        PressureText.Foreground = PhysicalValue.Foreground;
         UpdateAnimatedMetrics(snapshot);
     }
 
     private void UpdatePhysicalColor(double percent)
     {
-        var color = GetStatusColor(percent, CleanupFeedback.None);
-        if (PhysicalValue.Foreground is not Microsoft.UI.Xaml.Media.SolidColorBrush brush || brush.Color != color)
-            PhysicalValue.Foreground = PhysicalBar.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(color);
+        var theme = _accessibility.HighContrast ? "HighContrast" : Shell.ActualTheme == ElementTheme.Dark ? "Default" : "Light";
+        var palette = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[theme];
+        var pressure = percent >= 90 ? "High" : percent >= 70 ? "Elevated" : "Normal";
+        var barBrush = (Microsoft.UI.Xaml.Media.Brush)palette[$"Usage{pressure}Brush"];
+        var textBrush = (Microsoft.UI.Xaml.Media.Brush)palette[$"Usage{pressure}TextBrush"];
+        if (!ReferenceEquals(PhysicalBar.Foreground, barBrush)) PhysicalBar.Foreground = barBrush;
+        if (!ReferenceEquals(PressureText.Foreground, textBrush)) PressureText.Foreground = textBrush;
     }
 
     private Windows.UI.Color GetStatusColor(double percent, CleanupFeedback feedback)
@@ -495,32 +515,25 @@ public sealed partial class MainWindow : Window
 
     private void OverviewTab_Click(object sender, RoutedEventArgs args) => SelectPage(false);
     private void SettingsTab_Click(object sender, RoutedEventArgs args) => SelectPage(true);
-    private void PaneToggle_Click(object sender, RoutedEventArgs args)
-    {
-        if (!_ready || _exitRequested || _elevating || !_sidebarAvailable) return;
-        _settings.SidebarExpanded = !_settings.SidebarExpanded;
-        ReflowMetrics(Shell.ActualWidth, _uiSettings.TextScaleFactor);
-        SaveSettings();
-    }
     internal void SelectPage(bool settings)
     {
         if (settings) EnsureSettingsLoaded();
-        foreach (var button in new[] { OverviewTab, SettingsTab, SidebarOverviewTab, SidebarSettingsTab })
+        foreach (var button in new[] { OverviewTab, SettingsTab })
         {
-            var selected = settings == (button == SettingsTab || button == SidebarSettingsTab);
+            var selected = settings == (button == SettingsTab);
             button.IsChecked = selected;
             button.FontWeight = selected ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
-            button.Translation = new System.Numerics.Vector3(0, 0, selected ? 4 : 0);
+            button.Translation = System.Numerics.Vector3.Zero;
         }
-        PageCaption.Text = UiText.Get(settings ? "SettingsTab.Content" : "OverviewTab.Content");
         OverviewPage.Visibility = settings ? Visibility.Collapsed : Visibility.Visible;
         SettingsHost.Visibility = settings ? Visibility.Visible : Visibility.Collapsed;
+        PressureText.Visibility = !settings && !_sampleFailed ? Visibility.Visible : Visibility.Collapsed;
+        MonitoringStatus.Visibility = !settings && _sampleFailed ? Visibility.Visible : Visibility.Collapsed;
         if (SettingsPage is not null) SettingsPage.Visibility = SettingsHost.Visibility;
-        var selectedTab = NavigationPane.Visibility == Visibility.Visible
-            ? (settings ? SidebarSettingsTab : SidebarOverviewTab) : (settings ? SettingsTab : OverviewTab);
+        var selectedTab = settings ? SettingsTab : OverviewTab;
         selectedTab.Focus(FocusState.Programmatic);
         Shell.UpdateLayout();
-        BodyScroll.ChangeView(null, 0, null, true);
+        BodyScroll.ChangeView(0, 0, null, true);
         // Let pending focus/extent changes settle before resetting the shared scroll viewer.
         DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {

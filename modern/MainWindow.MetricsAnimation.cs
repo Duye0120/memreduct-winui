@@ -7,16 +7,15 @@ public sealed partial class MainWindow
 {
     private DispatcherQueueTimer? _metricsTimer;
     private MemorySnapshot? _latestMetrics;
-    private (double Physical, double Commit, double Cache, double CachePercent) _shownMetrics, _metricsFrom;
+    private (double Physical, double Commit, double Cache) _shownMetrics, _metricsFrom;
     private long _metricsStarted;
     private bool _metricsCleaning, _metricsToZero, _metricsReturning;
 
     private bool CanAnimateMetrics => _uiSettings.AnimationsEnabled && !_accessibility.HighContrast
         && CanRenderWindow && !_sampleFailed;
 
-    private static (double Physical, double Commit, double Cache, double CachePercent) MetricsFor(MemorySnapshot sample)
-        => (sample.PhysicalPercent, sample.CommitPercent, sample.CacheCurrent ?? 0,
-            sample.CacheCurrent is { } used && sample.CachePeak is { } peak ? MemorySnapshot.Percent(used, peak) : 0);
+    private static (double Physical, double Commit, double Cache) MetricsFor(MemorySnapshot sample)
+        => (sample.PhysicalPercent, sample.CommitPercent, sample.CacheCurrent ?? 0);
 
     private void UpdateAnimatedMetrics(MemorySnapshot sample)
     {
@@ -65,8 +64,7 @@ public sealed partial class MainWindow
                 DrawMetrics((
                     _metricsFrom.Physical + (target.Physical - _metricsFrom.Physical) * eased,
                     _metricsFrom.Commit + (target.Commit - _metricsFrom.Commit) * eased,
-                    _metricsFrom.Cache + (target.Cache - _metricsFrom.Cache) * eased,
-                    _metricsFrom.CachePercent + (target.CachePercent - _metricsFrom.CachePercent) * eased));
+                    _metricsFrom.Cache + (target.Cache - _metricsFrom.Cache) * eased));
                 if (progress < 1) return;
                 _metricsTimer.Stop();
                 if (_metricsToZero)
@@ -87,7 +85,7 @@ public sealed partial class MainWindow
         if (!_exitRequested && _latestMetrics is { } sample) DrawMetrics(MetricsFor(sample));
     }
 
-    private void DrawMetrics((double Physical, double Commit, double Cache, double CachePercent) frame)
+    private void DrawMetrics((double Physical, double Commit, double Cache) frame)
     {
         _shownMetrics = frame;
         SetText(PhysicalValue, $"{frame.Physical:0.0}%");
@@ -95,7 +93,5 @@ public sealed partial class MainWindow
         SetText(CacheValue, _latestMetrics?.CacheCurrent is not null
             ? MemorySnapshot.Bytes((ulong)Math.Max(0, frame.Cache)) : "—");
         SetProgress(PhysicalBar, frame.Physical);
-        SetProgress(CommitBar, frame.Commit);
-        SetProgress(CacheBar, frame.CachePercent);
     }
 }
