@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MemReduct.Fluent;
 
-internal static class NotificationShortcut
+internal static partial class NotificationShortcut
 {
     internal static string DefaultPath
     {
@@ -33,7 +33,7 @@ internal static class NotificationShortcut
                 properties.GetValue(ref identityKey, out var existingIdentity);
                 try
                 {
-                    if (existingIdentity.Type == 31 && Marshal.PtrToStringUni(existingIdentity.Pointer) == applicationId
+                    if (existingIdentity.Type is 8 or 31 && Marshal.PtrToStringUni(existingIdentity.Pointer) == applicationId
                         && string.Equals(target.ToString(), Environment.ProcessPath, StringComparison.OrdinalIgnoreCase)) return;
                 }
                 finally { PropVariantClear(ref existingIdentity); }

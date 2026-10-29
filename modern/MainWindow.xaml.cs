@@ -806,7 +806,7 @@ public sealed partial class MainWindow : Window
             if (result.CompletedAreas != CleanAreas.None && ShouldNotifyCleanup(_settings.NotifyAfterCleanup, result.Errors.Count, manual, _gameActive))
             {
                 try { _tray?.NotifySuccess(MemorySnapshot.Bytes(result.FreedBytes)); }
-                catch (Exception error) { ReportIssue(UiText.Get("TrayUnavailable"), error.Message); }
+                catch (Exception error) { ReportIssue(UiText.Get("NotificationFailed"), error.Message); }
             }
         }
         catch (Exception error)

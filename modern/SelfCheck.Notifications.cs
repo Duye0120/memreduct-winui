@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using Microsoft.Win32;
 
 namespace MemReduct.Fluent;
@@ -23,6 +24,7 @@ public sealed partial class MainWindow
         try
         {
             CheckNotificationPayload();
+            NotificationShortcut.CheckReadOnlyShortcuts(directory, applicationId);
             NotificationShortcut.Ensure(shortcutPath, applicationId);
             await App.WaitUntilAsync(() => NotificationShortcut.GetDisplayName(applicationId) == "Mem Reduct", TimeSpan.FromSeconds(5));
             Require(NotificationShortcut.GetDisplayName(applicationId) == "Mem Reduct",
@@ -82,4 +84,35 @@ public sealed partial class MainWindow
 
     [DllImport("shell32.dll")] private static extern int GetCurrentProcessExplicitAppUserModelID(out IntPtr identity);
 
+}
+
+internal static partial class NotificationShortcut
+{
+    internal static void CheckReadOnlyShortcuts(string directory, string applicationId)
+    {
+        foreach (ushort type in new ushort[] { 8, 31 })
+        {
+            var path = Path.Combine(directory, "shortcut-" + Guid.NewGuid().ToString("N") + ".lnk");
+            var link = (IShellLink)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("00021401-0000-0000-C000-000000000046"), true)!)!;
+            try
+            {
+                link.SetPath(Environment.ProcessPath!);
+                var key = new PropertyKey { Format = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), Id = 5 };
+                var value = new PropertyValue { Type = type, Pointer = type == 8 ? Marshal.StringToBSTR(applicationId) : Marshal.StringToCoTaskMemUni(applicationId) };
+                try { ((IPropertyStore)link).SetValue(ref key, ref value); ((IPropertyStore)link).Commit(); }
+                finally { PropVariantClear(ref value); }
+                ((IPersistFile)link).Save(path, true);
+            }
+            finally { Marshal.ReleaseComObject(link); }
+            try
+            {
+                File.SetAttributes(path, File.GetAttributes(path) | FileAttributes.ReadOnly);
+                var before = File.ReadAllBytes(path);
+                Ensure(path, applicationId);
+                if (!before.AsSpan().SequenceEqual(File.ReadAllBytes(path)))
+                    throw new InvalidOperationException("A correct read-only notification shortcut must remain unchanged");
+            }
+            finally { File.SetAttributes(path, FileAttributes.Normal); File.Delete(path); }
+        }
+    }
 }

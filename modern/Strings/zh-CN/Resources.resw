@@ -313,6 +313,7 @@
   <data name="NotifyCleanupSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>清理成功后显示气泡通知</value></data>
   <data name="CleanupSucceeded" xml:space="preserve"><value>内存清理完成</value></data>
   <data name="CleanupNotification" xml:space="preserve"><value>可用内存增加 {0}。</value></data>
+  <data name="NotificationFailed" xml:space="preserve"><value>清理已完成，通知发送失败</value></data>
   <data name="InstalledOnly" xml:space="preserve"><value>请先使用安装包安装程序，再启用管理员开机启动或安装更新。</value></data>
   <data name="InstalledStartupNote" xml:space="preserve"><value>主程序保持普通权限；开启后登录时启动主程序和受保护的清理助手。首次设置需要当前账户授权。</value></data>
   <data name="StartupAdminFailed" xml:space="preserve"><value>未完成启动设置。请使用当前登录的管理员账户授权，不要切换到其他账户。</value></data>

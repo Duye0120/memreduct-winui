@@ -313,6 +313,7 @@
   <data name="NotifyCleanupSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Notify after successful cleanup</value></data>
   <data name="CleanupSucceeded" xml:space="preserve"><value>Memory cleanup complete</value></data>
   <data name="CleanupNotification" xml:space="preserve"><value>Available memory increased by {0}.</value></data>
+  <data name="NotificationFailed" xml:space="preserve"><value>Cleanup completed, but the notification failed</value></data>
   <data name="InstalledOnly" xml:space="preserve"><value>Install the app using its installer before enabling elevated startup or installing updates.</value></data>
   <data name="InstalledStartupNote" xml:space="preserve"><value>The app keeps ordinary permissions. Enable startup to launch the app and protected cleanup helper at sign-in; first-time setup needs this account's authorization.</value></data>
   <data name="StartupAdminFailed" xml:space="preserve"><value>Startup setup did not finish. Authorize with the currently signed-in administrator account, not another account.</value></data>
