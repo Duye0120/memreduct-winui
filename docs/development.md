@@ -12,7 +12,7 @@
 - 进程在账户校验和单实例检查后、创建窗口前设置固定 `doye.MemReduct.Fluent` 身份，登记 `Mem Reduct` 名称及现有 `Assets/AppIcon.ico`。仅写注册表不足以改变实际通知顶部名称：首次通知还需确保存在同身份、名为 `Mem Reduct` 的开始菜单快捷方式，使 Windows 应用目录能够解析名称；检查不加入启动热路径。安装器在项目自己的 `memreduct-winui` 子目录创建快捷方式，便携运行通过现有普通用户令牌按需维护当前账户的项目快捷方式，不修改原版 Mem Reduct 的入口。文件说明与产品名称同步为 `Mem Reduct`。
 - 清理成功继续使用原托盘通知入口，改为独立的软件图标，不借用动态百分比图标。图标按需加载并保留到托盘释放，避免发送返回后过早销毁导致通知被丢弃；静音、安静时间、即时投递及原通知开关条件保留，未增加依赖或改动清理、设置逻辑。
 - 默认自检增加 x64 通知结构与载荷断言，不发送真实通知。显式 `--self-check <独立目录> --notification-preview` 才创建独立测试托盘并发送示例通知；每次使用唯一测试身份及临时开始菜单快捷方式，同时核对 Windows 应用目录名称，结束后仅移除自己的快捷方式和登记，不清理内存、不访问个人设置或启动任务。
-- 2026-10-29 修正后的中英文专项通过 Windows 应用目录名称、软件图标路径、系统投递及载荷检查，用户确认实际通知顶部显示 `Mem Reduct`。最终证据在仓库外 `work/notification-display-name-shortcut/notification-check.json` 与 `notification-display-name-shortcut-en-US/notification-check.json`；先前 `notification-final-*` 只证明登记和投递，不能作为顶部名称通过的证据。便携设置哈希未变，测试快捷方式及身份均已移除，未替换安装版或发布。
+- 2026-10-29 修正后的中英文专项通过 Windows 应用目录名称、软件图标路径、系统投递及载荷检查，用户确认实际通知顶部显示 `Mem Reduct`。最终证据在仓库外 `work/notification-display-name-shortcut/notification-check.json` 与 `notification-display-name-shortcut-en-US/notification-check.json`；先前 `notification-final-*` 只证明登记和投递，不能作为顶部名称通过的证据。正式暂存程序的中英文专项同样通过，证据在 `work/release-0.0.14-notifications-*`。安装版和便携版设置哈希未变，测试快捷方式及身份均已移除，未替换安装版；发布记录见 [安装维护说明](installation.md#0014-通知名称与图标)。
 - 完整自检在本机标题栏缩放断言处停止：`BrandHeader top=6, height=20, captionHeight=26.6667`。已安装的原版 0.0.13 同样失败，记录在 `work/notification-regression-baseline`，本次未改界面布局。Computer Use 抓图遇到窗口归属识别错误，未将系统投递检查表述为通知截图验收。
 
 ### 已确认的紧凑版界面（0.0.13）
