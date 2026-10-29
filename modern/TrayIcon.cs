@@ -10,6 +10,9 @@ internal enum CleanupFeedback { None, Cleaning, Success, Warning, Failed }
 
 internal sealed class TrayIcon : IDisposable
 {
+    internal const string ApplicationId = "doye.MemReduct.Fluent";
+    internal const string DisplayName = "Mem Reduct";
+    internal static string NotificationIconPath => Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
     private const uint CallbackMessage = 0x8001;
     internal static readonly uint ShowMessage = RegisterWindowMessage("MemReduct.Fluent.Show.50d9cf93");
     private readonly IntPtr _window;
@@ -18,6 +21,9 @@ internal sealed class TrayIcon : IDisposable
     private readonly Func<bool> _gameModeEnabled, _confirmationRequired;
     private readonly uint _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
     private NotifyIconData _data;
+    private IntPtr _notificationIcon;
+    private readonly string? _notificationShortcut;
+    private bool _notificationShortcutReady;
     private bool _added, _version4;
     private long _lastActivation = long.MinValue / 2;
     private string _tooltip = "";
@@ -26,12 +32,21 @@ internal sealed class TrayIcon : IDisposable
     private readonly UISettings _uiSettings = new();
     public bool IsVisible => _added;
 
+    internal static void InitializeNotificationIdentity(string applicationId)
+    {
+        Marshal.ThrowExceptionForHR(SetCurrentProcessExplicitAppUserModelID(applicationId));
+        using var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\AppUserModelId\" + applicationId);
+        key.SetValue("DisplayName", DisplayName, RegistryValueKind.ExpandString);
+        key.SetValue("IconUri", NotificationIconPath, RegistryValueKind.ExpandString);
+    }
+
     public TrayIcon(IntPtr window, Action show, Action exit, Action clean, Action toggleGameMode, Func<bool> gameModeEnabled,
-        Action toggleConfirmation, Func<bool> confirmationRequired)
+        Action toggleConfirmation, Func<bool> confirmationRequired, string? notificationShortcut = null)
     {
         _window = window; _show = show; _exit = exit; _clean = clean;
         _toggleGameMode = toggleGameMode; _gameModeEnabled = gameModeEnabled;
         _toggleConfirmation = toggleConfirmation; _confirmationRequired = confirmationRequired;
+        _notificationShortcut = notificationShortcut;
         _procedure = WindowProc;
         if (!SetWindowSubclass(window, _procedure, 1, UIntPtr.Zero)) throw new Win32Exception(Marshal.GetLastWin32Error());
         var taskbar = FindWindow("Shell_TrayWnd", null);
@@ -99,12 +114,33 @@ internal sealed class TrayIcon : IDisposable
     public void NotifySuccess(string freed)
     {
         if (!_added) return;
-        var notification = _data;
+        if (!_notificationShortcutReady)
+        {
+            Marshal.ThrowExceptionForHR(GetCurrentProcessExplicitAppUserModelID(out var identity));
+            try { NotificationShortcut.Ensure(_notificationShortcut ?? NotificationShortcut.DefaultPath, Marshal.PtrToStringUni(identity)!); }
+            finally { Marshal.FreeCoTaskMem(identity); }
+            _notificationShortcutReady = true;
+        }
+        if (_notificationIcon == IntPtr.Zero)
+        {
+            // The Shell may read the balloon icon after returning; retain it independently of the changing tray digits.
+            var size = Math.Clamp(GetSystemMetricsForDpi(11, GetDpiForWindow(_window)), 32, 256);
+            _notificationIcon = LoadImage(IntPtr.Zero, NotificationIconPath, 1, size, size, 0x10);
+            if (_notificationIcon == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
+        var notification = BuildSuccessNotification(_data, freed, _notificationIcon);
+        if (!Shell_NotifyIcon(1, ref notification)) throw new Win32Exception(Marshal.GetLastWin32Error());
+    }
+
+    internal static NotifyIconData BuildSuccessNotification(NotifyIconData data, string freed, IntPtr icon)
+    {
+        var notification = data;
         notification.Flags = 0x10 | 0x40; // NIF_INFO | NIF_REALTIME: never queue a stale success balloon.
         notification.InfoTitle = UiText.Get("CleanupSucceeded");
         notification.Info = UiText.Get("CleanupNotification", freed);
-        notification.InfoFlags = 1 | 0x10 | 0x80; // Information, silent, respect quiet time.
-        Shell_NotifyIcon(1, ref notification);
+        notification.InfoFlags = 4 | 0x10 | 0x20 | 0x80; // Custom icon, silent, large icon, respect quiet time.
+        notification.BalloonIcon = icon;
+        return notification;
     }
 
     private IntPtr WindowProc(IntPtr window, uint message, UIntPtr wparam, IntPtr lparam, UIntPtr id, UIntPtr reference)
@@ -160,7 +196,9 @@ internal sealed class TrayIcon : IDisposable
         if (_added) Shell_NotifyIcon(2, ref _data);
         RemoveWindowSubclass(_window, _procedure, 1);
         if (_data.Icon != IntPtr.Zero) DestroyIcon(_data.Icon);
+        if (_notificationIcon != IntPtr.Zero) DestroyIcon(_notificationIcon);
         _data.Icon = IntPtr.Zero;
+        _notificationIcon = IntPtr.Zero;
         _added = false;
     }
 
@@ -178,7 +216,7 @@ internal sealed class TrayIcon : IDisposable
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private struct NotifyIconData
+    internal struct NotifyIconData
     {
         public uint Size; public IntPtr Window; public uint Id, Flags, Callback; public IntPtr Icon;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string Tip;
@@ -198,10 +236,12 @@ internal sealed class TrayIcon : IDisposable
     private static extern bool SetWindowSubclass(IntPtr hwnd, SubclassProc proc, UIntPtr id, UIntPtr reference);
     [DllImport("comctl32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool RemoveWindowSubclass(IntPtr hwnd, SubclassProc proc, UIntPtr id);
     [DllImport("comctl32.dll")] private static extern IntPtr DefSubclassProc(IntPtr hwnd, uint message, UIntPtr wparam, IntPtr lparam);
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "Shell_NotifyIconW")]
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "Shell_NotifyIconW", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)] private static extern bool Shell_NotifyIcon(uint message, ref NotifyIconData data);
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern int SetCurrentProcessExplicitAppUserModelID(string applicationId);
+    [DllImport("shell32.dll")] private static extern int GetCurrentProcessExplicitAppUserModelID(out IntPtr applicationId);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern uint RegisterWindowMessage(string message);
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr LoadImage(IntPtr instance, string name, uint type, int cx, int cy, uint flags);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern IntPtr LoadImage(IntPtr instance, string name, uint type, int cx, int cy, uint flags);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool DestroyIcon(IntPtr icon);
     [DllImport("user32.dll")] private static extern IntPtr CreatePopupMenu();
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool DestroyMenu(IntPtr menu);

@@ -49,12 +49,21 @@ Source: "{#AppSource}\HelperPayload\MemReduct.Helper.exe.config"; DestDir: "{com
 Source: "..\..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\Mem Reduct Fluent"; Filename: "{app}\MemReduct.Fluent.exe"; WorkingDir: "{app}"
+Name: "{autoprograms}\memreduct-winui\Mem Reduct"; Filename: "{app}\MemReduct.Fluent.exe"; WorkingDir: "{app}"; AppUserModelID: "doye.MemReduct.Fluent"
+
+[InstallDelete]
+Type: files; Name: "{autoprograms}\Mem Reduct Fluent.lnk"
+
+[Registry]
+Root: HKCU; Subkey: "Software\Classes\AppUserModelId\doye.MemReduct.Fluent"; ValueType: expandsz; ValueName: "DisplayName"; ValueData: "Mem Reduct"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\AppUserModelId\doye.MemReduct.Fluent"; ValueType: expandsz; ValueName: "IconUri"; ValueData: "{app}\Assets\AppIcon.ico"
 
 [Run]
 Filename: "{app}\MemReduct.Fluent.exe"; Parameters: "{code:ImportArguments}"; Description: "{cm:LaunchProgram,Mem Reduct Fluent}"; Flags: postinstall nowait skipifsilent runasoriginaluser; Check: not IsAppUpdate
 
 [UninstallDelete]
+Type: files; Name: "{userprograms}\memreduct-winui\Mem Reduct.lnk"
+Type: dirifempty; Name: "{userprograms}\memreduct-winui"
 ; Only our verified installer cache. User profiles in LocalAppData are deliberately retained.
 Type: files; Name: "{app}\Updates\update.exe"
 Type: files; Name: "{app}\Updates\update.exe.partial"

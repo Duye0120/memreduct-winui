@@ -55,6 +55,9 @@ public partial class App : Application
                 if (Installation.IsInstalled && importIndex >= 0 && importIndex + 1 < Arguments.Length && Arguments[importIndex + 1].Length > 0)
                     SettingsStore.ImportIfMissing(Arguments[importIndex + 1], Installation.SettingsPath);
             }
+            if (!checking) TrayIcon.InitializeNotificationIdentity(TrayIcon.ApplicationId);
+            else if (Arguments.Contains("--notification-preview"))
+                TrayIcon.InitializeNotificationIdentity(TrayIcon.ApplicationId + ".NotificationPreview." + Guid.NewGuid().ToString("N"));
             var settings = checking ? new AppSettings { Language = "zh-CN" } : elevatedSettings ?? SettingsStore.Load();
             var languageIndex = Array.IndexOf(Arguments, "--check-language");
             if (checking && languageIndex >= 0 && languageIndex + 1 < Arguments.Length)
@@ -67,7 +70,8 @@ public partial class App : Application
                 var index = Array.IndexOf(Arguments, "--self-check");
                 if (index + 1 >= Arguments.Length) throw new ArgumentException("--self-check 需要一个输出目录。");
                 var directory = Path.GetFullPath(Arguments[index + 1]);
-                if (Arguments.Contains("--visual-preview")) _window.RunAnimationPreview(directory);
+                if (Arguments.Contains("--notification-preview")) _window.RunNotificationPreview(directory);
+                else if (Arguments.Contains("--visual-preview")) _window.RunAnimationPreview(directory);
                 else _window.RunSelfCheck(directory);
             }
             else if (!Arguments.Contains("--minimized") || !_window.CanStayInTray) _window.Activate();

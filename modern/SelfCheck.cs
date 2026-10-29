@@ -297,6 +297,7 @@ public sealed partial class MainWindow
             Require(ShouldNotifyCleanup(true, 0, true, false) && !ShouldNotifyCleanup(false, 0, true, false)
                 && !ShouldNotifyCleanup(true, 1, true, false) && !ShouldNotifyCleanup(true, 0, false, true),
                 "Only enabled, successful cleanups notify; automatic game-mode notifications are suppressed");
+            CheckNotificationPayload();
             var activationEvents = new uint[] { 0x201, 0x202, 0x400 };
             Require(activationEvents.Count(x => TrayIcon.IsActivation(x, true)) == 1
                 && activationEvents.Count(x => TrayIcon.IsActivation(x, false)) == 1
