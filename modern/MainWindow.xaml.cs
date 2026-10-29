@@ -11,6 +11,7 @@ namespace MemReduct.Fluent;
 
 public sealed partial class MainWindow : Window
 {
+    private const int DefaultWindowWidth = 560, DefaultWindowHeight = 800;
     private readonly AppSettings _settings;
     private readonly bool _checking;
     private readonly DispatcherQueueTimer? _timer;
@@ -58,7 +59,7 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
         var handle = WinRT.Interop.WindowNative.GetWindowHandle(this);
         var scale = GetDpiForWindow(handle) / 96.0;
-        AppWindow.Resize(new SizeInt32((int)(960 * scale), (int)(520 * scale)));
+        AppWindow.Resize(new SizeInt32((int)(DefaultWindowWidth * scale), (int)(DefaultWindowHeight * scale)));
         UpdatePresenterConstraints(scale);
         UpdateCornerRadii();
         ResultText.Text = _settings.LastCleanUtc is { } lastClean

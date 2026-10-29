@@ -737,7 +737,7 @@ public sealed partial class MainWindow
             CleanupHistoryExpander.IsExpanded = false;
             CleanupHistoryCard.Visibility = Visibility.Visible;
             CleanupHistoryEmpty.Visibility = Visibility.Visible;
-            Layout(700, 560, 1);
+            Layout(DefaultWindowWidth, DefaultWindowHeight, 1);
             SelectPage(true);
             BodyScroll.ChangeView(null, BodyScroll.ScrollableHeight, null, true);
             await Task.Delay(100);

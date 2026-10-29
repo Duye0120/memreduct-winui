@@ -56,10 +56,10 @@ public sealed partial class MainWindow
         Directory.CreateDirectory(directory);
         Title = "Mem Reduct 界面预览";
         var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
-        AppWindow.Resize(new SizeInt32((int)(960 * scale), (int)(520 * scale)));
-        AppWindow.Move(new PointInt32(100, 100));
+        AppWindow.Resize(new SizeInt32((int)(DefaultWindowWidth * scale), (int)(DefaultWindowHeight * scale)));
+        AppWindow.Move(new PointInt32(100, 20));
         Shell.SizeChanged += (_, _) => ReflowMetrics(Shell.ActualWidth, _uiSettings.TextScaleFactor);
-        ReflowMetrics(960, _uiSettings.TextScaleFactor);
+        ReflowMetrics(DefaultWindowWidth, _uiSettings.TextScaleFactor);
         UpdateStats(MemoryEngine.Read());
         CleanButton.Content = UiText.Get("CleanMemory");
         Activate();
@@ -77,7 +77,7 @@ public sealed partial class MainWindow
         AppWindow.Resize(new SizeInt32((int)(1280 * scale), (int)(520 * scale)));
         await WritePreview(directory, "settings-wide.png");
         WritePreviewBounds(directory, "settings-wide-bounds.json");
-        AppWindow.Resize(new SizeInt32((int)(960 * scale), (int)(520 * scale)));
+        AppWindow.Resize(new SizeInt32((int)(DefaultWindowWidth * scale), (int)(DefaultWindowHeight * scale)));
         SelectPage(false);
         await PreviewMetricsCleanupAsync();
         CleanupHistoryExpander.IsExpanded = ProcessesExpander.IsExpanded = true;
