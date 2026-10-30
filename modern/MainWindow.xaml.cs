@@ -261,12 +261,15 @@ public sealed partial class MainWindow : Window
             if (Installation.IsInstalled) SettingsPage.StartupNote.Text = UiText.Get(SettingsPage.StartupSwitch.IsOn ? "InstalledStartupOn" : "InstalledStartupNote");
             SettingsPage.GameModeStatus.Text = UiText.Get(_gameActive ? "GameModeActive" : _settings.GameMode ? "GameModeWatching" : "GameModeOff");
         }
-        CleanButton.IsEnabled = !_cleaning && !_restartPromptOpen && !_elevating && _settings.Areas != CleanAreas.None;
-        ElevateButton.IsEnabled = !_cleaning && !_restartPromptOpen && !_elevating;
+        ManualGameSwitch.IsOn = _settings.ManualGameMode;
+        ManualGameSwitch.IsEnabled = !_cleaning && !_restartPromptOpen && !_elevating;
+        CleanButton.IsEnabled = !_cleaning && !_restartPromptOpen && !_elevating && _settings.ManualAreas != CleanAreas.None;
+        ElevateButton.IsEnabled = !_checking && !_cleaning && !_restartPromptOpen && !_elevating;
         if (Installation.IsInstalled) ElevateButton.Content = UiText.Get("AuthorizeHelper");
         if (_elevating) CleanButton.Content = UiText.Get("ElevationStarting");
         else if (!_cleaning) CleanButton.Content = UiText.Get(CanCleanMemory ? "CleanMemory" : "AuthorizeClean");
-        CleanDescription.Text = UiText.Get(CanCleanMemory ? "CleanDescription" : Installation.IsInstalled ? "HelperAuthorizeDescription" : "AuthorizeDescription");
+        CleanDescription.Text = UiText.Get(!CanCleanMemory ? Installation.IsInstalled ? "HelperAuthorizeDescription" : "AuthorizeDescription"
+            : _settings.ManualGameMode ? "GameCleanupDescription" : "CleanDescription");
         AdminBanner.IsOpen = !_gameActive && (_settings.AutoThreshold || _settings.AutoInterval)
             && _settings.AutomaticAreas != CleanAreas.None && !CanCleanMemory;
         AdminBanner.Visibility = AdminBanner.IsOpen ? Visibility.Visible : Visibility.Collapsed;
@@ -279,8 +282,8 @@ public sealed partial class MainWindow : Window
         else if (modes.Count != 0 && _settings.AutomaticAreas == CleanAreas.None) AutoStatusText.Text = UiText.Get("ManualOnlyAuto");
         else if (_settings.AutoThreshold && _thresholdRetryAfter > DateTimeOffset.UtcNow)
             AutoStatusText.Text += UiText.Get("ThresholdRetryDeferred");
-        if (_gameActive) AutoStatusText.Text = UiText.Get("GameModeActive");
-        ProtectionStatusText.Text = _settings.GameMode ? UiText.Get("FullscreenPauseLabel") : "";
+        if (_gameActive || _settings.ManualGameMode) AutoStatusText.Text = UiText.Get("GameModeActive");
+        ProtectionStatusText.Text = !_settings.ManualGameMode && _settings.GameMode ? UiText.Get("FullscreenPauseLabel") : "";
     }
 
     private int AdvancedCleanupCount() => System.Numerics.BitOperations.PopCount((uint)(_settings.Areas
@@ -350,7 +353,7 @@ public sealed partial class MainWindow : Window
         if (_exitRequested) return;
         try
         {
-            UpdateGameProtection(_settings.GameMode && GameModeMonitor.IsFullscreenApp(), DateTimeOffset.UtcNow);
+            UpdateGameProtection(_settings.ManualGameMode || (_settings.GameMode && GameModeMonitor.IsFullscreenApp()), DateTimeOffset.UtcNow);
             var snapshot = MemoryEngine.Read();
             _lastReadUtc = DateTimeOffset.UtcNow;
             _lastPercent = snapshot.PhysicalPercent;
@@ -626,9 +629,26 @@ public sealed partial class MainWindow : Window
         {
             _ready = false; SettingsPage.GameModeSwitch.IsOn = enabled; _ready = true;
         }
-        if (!_settings.GameMode) UpdateGameProtection(false, DateTimeOffset.UtcNow);
+        if (!_settings.GameMode) UpdateGameProtection(_settings.ManualGameMode, DateTimeOffset.UtcNow);
         RefreshOptions(); SaveSettings();
         if (!_checking) Sample();
+    }
+
+    private async void ManualGameSwitch_Toggled(object sender, RoutedEventArgs args)
+    {
+        if (!_ready || ManualGameSwitch.IsOn == _settings.ManualGameMode) return;
+        if (_cleaning || _elevating || _restartPromptOpen) { RefreshOptions(); return; }
+        var enabled = ManualGameSwitch.IsOn;
+        _settings.ManualGameMode = enabled;
+        if (!SaveSettings())
+        {
+            _settings.ManualGameMode = !enabled;
+            RefreshOptions();
+            return;
+        }
+        UpdateGameProtection(enabled || (_settings.GameMode && !_checking && GameModeMonitor.IsFullscreenApp()), DateTimeOffset.UtcNow);
+        RefreshOptions();
+        if (enabled) await CleanAsync(true, confirm: false);
     }
 
     private void CleanupOption_Click(object sender, RoutedEventArgs args)
@@ -754,7 +774,7 @@ public sealed partial class MainWindow : Window
     private async void CleanFromTray()
     {
         if (_exitRequested || _checking || _cleaning || _restartPromptOpen || _elevating) return;
-        if (_settings.Areas == CleanAreas.None)
+        if (_settings.ManualAreas == CleanAreas.None)
         {
             SetFeedback(CleanupFeedback.Warning, UiText.Get("SelectArea"));
             ShowWindow(); SelectPage(true); ReportIssue(UiText.Get("CleanMemory"), UiText.Get("SelectArea"));
@@ -766,8 +786,8 @@ public sealed partial class MainWindow : Window
     private async Task CleanAsync(bool manual, bool confirm = true, bool fromTray = false)
     {
         if (_exitRequested || _checking) return;
-        var areas = manual ? _settings.Areas : _settings.AutomaticAreas;
-        if (_cleaning || _restartPromptOpen || _elevating || (!manual && _gameActive) || areas == CleanAreas.None) return;
+        var areas = manual ? _settings.ManualAreas : _settings.AutomaticAreas;
+        if (_cleaning || _restartPromptOpen || _elevating || (!manual && (_gameActive || _settings.ManualGameMode)) || areas == CleanAreas.None) return;
         _cleaning = true; RefreshOptions();
         Stopwatch? cleanupDuration = null;
         try

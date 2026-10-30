@@ -13,6 +13,60 @@ namespace MemReduct.Fluent;
 
 public sealed partial class MainWindow
 {
+    private void CheckManualGameMode(string directory)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var options = new AppSettings { AutoThreshold = true, AutoInterval = true, GameMode = false };
+        var configuredAreas = options.Areas;
+        options.ManualGameMode = true;
+        Require(!options.IsAutoDue(100, now, now.AddHours(-1)) && options.ManualAreas == CleanAreas.LowPriorityStandby,
+            "Manual game mode blocks both schedules without fullscreen detection and uses only low-priority cache");
+        var profile = Path.Combine(directory, "game-mode-settings.json");
+        SettingsStore.Save(options, profile);
+        var restored = SettingsStore.Load(profile);
+        Require(restored.ManualGameMode && restored.Areas == configuredAreas
+            && restored.AutoThreshold && restored.AutoInterval && !restored.GameMode,
+            "Manual game mode survives restart until explicitly disabled");
+        Require(!JsonSerializer.Deserialize<AppSettings>("{}")!.ManualGameMode,
+            "Existing profiles default to manual game mode off");
+        options.ManualGameMode = false;
+        Require(options.IsAutoDue(100, now, now.AddHours(-1)) && options.ManualAreas == configuredAreas,
+            "Leaving manual game mode restores the configured cleanup policy");
+        var original = JsonSerializer.Serialize(_settings);
+        var wasActive = _gameActive;
+        var lastAttempt = _lastAttempt;
+        ManualGameSwitch.IsOn = true;
+        Require(_settings.ManualGameMode && _gameActive && AutoStatusText.Text == UiText.Get("GameModeActive"),
+            "Overview game switch pauses scheduling and updates its status");
+        SetGameMode(_settings.GameMode);
+        Require(_gameActive, "Fullscreen preference changes cannot cancel manual game mode");
+        var beforeExit = DateTimeOffset.UtcNow;
+        ManualGameSwitch.IsOn = false;
+        Require(!_settings.ManualGameMode && !_gameActive && _lastAttempt >= beforeExit
+            && JsonSerializer.Serialize(_settings) == original,
+            "Turning game mode off preserves all saved preferences and applies the resume cooldown");
+        Require(!options.IsAutoDue(100, _lastAttempt.AddSeconds(29), _lastAttempt)
+            && options.IsAutoDue(100, _lastAttempt.AddSeconds(30), _lastAttempt),
+            "Resume cooldown blocks immediate threshold cleanup for thirty seconds");
+        _gameActive = wasActive;
+        _lastAttempt = lastAttempt;
+        RefreshOptions();
+    }
+
+    private void CheckPreferenceInputParts()
+    {
+        var switches = Descendants(SettingsPage).OfType<ToggleSwitch>().ToArray();
+        Require(switches.Length == 9, "All nine preference switches are covered");
+        foreach (var control in switches)
+        {
+            control.ApplyTemplate();
+            var thumb = Descendants(control).OfType<Microsoft.UI.Xaml.Controls.Primitives.Thumb>()
+                .SingleOrDefault(element => element.Name == "SwitchThumb");
+            Require(thumb is not null && thumb.IsHitTestVisible && thumb.ActualWidth > 0 && thumb.ActualHeight > 0,
+                $"{control.Name} retains the native ToggleSwitch pointer input part");
+        }
+    }
+
     // Developer-only checks: never clean RAM, create a tray icon, save preferences or register tasks.
     internal async void RunSelfCheck(string directory)
     {
@@ -28,7 +82,10 @@ public sealed partial class MainWindow
                 "Cold settings initialization persists the first tray confirmation choice in the isolated profile");
             checks.Add("Cold settings serialization runs before other JSON diagnostics; file access retains ordinary permissions.");
             AppWindow.IsShownInSwitchers = false;
-            AppWindow.Move(new Windows.Graphics.PointInt32(-30000, -30000));
+            // Off-screen coordinates can select a different monitor DPI than the XAML root.
+            var workArea = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(AppWindow.Id,
+                Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
+            AppWindow.Move(new Windows.Graphics.PointInt32(workArea.X, workArea.Y));
             AppWindow.Show(false);
             await Task.Delay(250);
             var english = UiText.LanguageTag == "en-US";
@@ -55,7 +112,12 @@ public sealed partial class MainWindow
             var settingsTree = SettingsPage;
             EnsureSettingsLoaded();
             Require(ReferenceEquals(settingsTree, SettingsPage), "Settings controls are created once and retained for later visits");
+            SelectPage(true);
             Shell.UpdateLayout();
+            CheckPreferenceInputParts();
+            SelectPage(false);
+            Shell.UpdateLayout();
+            CheckManualGameMode(directory);
             var nativeCaptionHeight = AppWindow.TitleBar.Height / Shell.XamlRoot.RasterizationScale;
             foreach (var header in new FrameworkElement[] { BrandHeader })
             {
@@ -922,7 +984,10 @@ public sealed partial class MainWindow
         var user = GetGuiResources(process, 1);
         for (var i = 0; i < 200; i++)
             TrayGlyph.DestroyIcon(TrayGlyph.Create(i % 17 == 0 ? null : i % 101, 24, 0xf4f4f4, out _, i % 12));
-        Require(GetGuiResources(process, 0) == gdi && GetGuiResources(process, 1) == user, "Tray icon refresh releases native handles");
+        var remainingGdi = GetGuiResources(process, 0);
+        var remainingUser = GetGuiResources(process, 1);
+        Require(remainingGdi == gdi && remainingUser == user,
+            $"Tray icon refresh releases native handles: GDI {gdi}->{remainingGdi}, USER {user}->{remainingUser}");
         const int frameSize = 24, stripWidth = 12 * frameSize;
         var strip = new byte[stripWidth * frameSize * 4];
         byte[]? firstFrame = null;

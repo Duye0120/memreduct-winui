@@ -3,7 +3,7 @@
         <Style TargetType="ToggleSwitch">
             <Setter Property="MinWidth" Value="20" /><Setter Property="MinHeight" Value="20" /><Setter Property="Width" Value="20" />
             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToggleSwitch">
-                <Grid x:Name="PreferenceRoot" Background="Transparent" Width="20" MinHeight="20">
+                <Grid x:Name="PreferenceRoot" Background="Transparent" Width="20" MinHeight="20" Control.IsTemplateFocusTarget="True">
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroup x:Name="CommonStates">
                             <VisualState x:Name="Normal" /><VisualState x:Name="PointerOver" /><VisualState x:Name="Pressed" />
@@ -18,6 +18,10 @@
                     </VisualStateManager.VisualStateGroups>
                     <Border x:Name="PreferenceBox" Width="16" Height="16" CornerRadius="2" BorderThickness="0.5" BorderBrush="{ThemeResource MutedBrush}" Background="{ThemeResource SurfaceBrush}" />
                     <FontIcon x:Name="PreferenceMark" Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource CleanOnAccentBrush}" Visibility="Collapsed" />
+                    <!-- ToggleSwitch attaches its native tap handler to this named template part. -->
+                    <Thumb x:Name="SwitchThumb" AutomationProperties.AccessibilityView="Raw">
+                        <Thumb.Template><ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent" /></ControlTemplate></Thumb.Template>
+                    </Thumb>
                 </Grid>
             </ControlTemplate></Setter.Value></Setter>
         </Style>

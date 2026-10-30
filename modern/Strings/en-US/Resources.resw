@@ -289,7 +289,7 @@
   <data name="RestartNow" xml:space="preserve"><value>Restart now</value></data>
   <data name="RestartLater" xml:space="preserve"><value>Restart later</value></data>
   <data name="RestartFailed" xml:space="preserve"><value>Unable to restart the app. Please reopen it later.</value></data>
-  <data name="GameModeLabel.Text" xml:space="preserve"><value>Game mode</value></data>
+  <data name="GameModeLabel.Text" xml:space="preserve"><value>Pause automatic cleanup in full screen</value></data>
   <data name="GameModeDescription.Text" xml:space="preserve"><value>Pause automatic cleanup in full screen; wait 30 seconds after leaving.</value></data>
   <data name="GameModeSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Pause automatic cleanup for full-screen apps</value></data>
   <data name="GameModeMenu" xml:space="preserve"><value>Game mode (detect full screen)</value></data>
@@ -390,4 +390,8 @@
   <data name="CleanupSummaryManual" xml:space="preserve"><value>{0:HH:mm} Manual</value></data>
   <data name="CleanupSummaryAutomatic" xml:space="preserve"><value>{0:HH:mm} Automatic</value></data>
   <data name="AutoModeJoin" xml:space="preserve"><value> or </value></data>
+  <data name="ManualGameModeLabel.Text" xml:space="preserve"><value>Game mode</value></data>
+  <data name="ManualGameSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Game mode</value></data>
+  <data name="ManualGameHint.Text" xml:space="preserve"><value>Clear low-priority cache once, then pause automatic cleanup until turned off manually.</value></data>
+  <data name="GameCleanupDescription" xml:space="preserve"><value>Game mode clears only low-priority standby cache.</value></data>
 </root>

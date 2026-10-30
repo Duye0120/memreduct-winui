@@ -24,6 +24,7 @@ public sealed class AppSettings
     public bool CombineMemoryPages { get; set; }
     public bool AutoThreshold { get; set; }
     public bool GameMode { get; set; } = true;
+    public bool ManualGameMode { get; set; }
     public int Threshold { get; set; } = 90;
     public bool AutoInterval { get; set; }
     public int IntervalMinutes { get; set; } = 30;
@@ -43,6 +44,9 @@ public sealed class AppSettings
     [System.Text.Json.Serialization.JsonIgnore]
     public CleanAreas AutomaticAreas => MemoryEngine.ForAutomaticCleanup(Areas);
 
+    [System.Text.Json.Serialization.JsonIgnore]
+    public CleanAreas ManualAreas => ManualGameMode ? CleanAreas.LowPriorityStandby : Areas;
+
     public void Normalize()
     {
         Threshold = Math.Clamp(Threshold, 50, 99);
@@ -54,7 +58,7 @@ public sealed class AppSettings
     public bool IsAutoDue(double physicalPercent, DateTimeOffset now, DateTimeOffset lastAttempt, bool gameActive = false,
         DateTimeOffset thresholdRetryAfter = default)
     {
-        if ((GameMode && gameActive) || AutomaticAreas == CleanAreas.None || now - lastAttempt < TimeSpan.FromSeconds(30)) return false;
+        if (ManualGameMode || (GameMode && gameActive) || AutomaticAreas == CleanAreas.None || now - lastAttempt < TimeSpan.FromSeconds(30)) return false;
         return (AutoThreshold && physicalPercent >= Threshold && now >= thresholdRetryAfter) ||
             (AutoInterval && now - lastAttempt >= TimeSpan.FromMinutes(IntervalMinutes));
     }

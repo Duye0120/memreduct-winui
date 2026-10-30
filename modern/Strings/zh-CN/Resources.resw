@@ -289,7 +289,7 @@
   <data name="RestartNow" xml:space="preserve"><value>立即重启</value></data>
   <data name="RestartLater" xml:space="preserve"><value>稍后重启</value></data>
   <data name="RestartFailed" xml:space="preserve"><value>程序重启失败，请稍后手动重新打开。</value></data>
-  <data name="GameModeLabel.Text" xml:space="preserve"><value>游戏模式</value></data>
+  <data name="GameModeLabel.Text" xml:space="preserve"><value>全屏时暂停自动清理</value></data>
   <data name="GameModeDescription.Text" xml:space="preserve"><value>全屏时暂停自动清理，退出后缓冲 30 秒。</value></data>
   <data name="GameModeSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>自动识别全屏并暂停清理</value></data>
   <data name="GameModeMenu" xml:space="preserve"><value>游戏模式（自动识别全屏）</value></data>
@@ -390,4 +390,8 @@
   <data name="CleanupSummaryManual" xml:space="preserve"><value>{0:HH:mm} 手动</value></data>
   <data name="CleanupSummaryAutomatic" xml:space="preserve"><value>{0:HH:mm} 自动</value></data>
   <data name="AutoModeJoin" xml:space="preserve"><value> 或</value></data>
+  <data name="ManualGameModeLabel.Text" xml:space="preserve"><value>游戏模式</value></data>
+  <data name="ManualGameSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>游戏模式</value></data>
+  <data name="ManualGameHint.Text" xml:space="preserve"><value>开启时整理低优先级缓存，暂停自动清理，直到手动关闭。</value></data>
+  <data name="GameCleanupDescription" xml:space="preserve"><value>游戏模式下仅清理低优先级备用缓存。</value></data>
 </root>

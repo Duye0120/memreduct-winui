@@ -64,9 +64,12 @@ public sealed partial class MainWindow
         CleanButton.Content = UiText.Get("CleanMemory");
         Activate();
         await Task.Delay(500);
+        CheckManualGameMode(directory);
+        File.WriteAllText(Path.Combine(directory, "game-mode-check.json"), "{\"passed\":true,\"settingsUsed\":false,\"cleanupExecuted\":false}");
         await WritePreview(directory, "memory-layout.png");
         SelectPage(true);
         await WritePreview(directory, "settings-layout.png");
+        CheckPreferenceInputParts();
         WritePreviewBounds(directory, "settings-bounds.json");
         SettingsPage.AutoSettingsCard.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false, VerticalAlignmentRatio = 0 });
         await WritePreview(directory, "settings-inputs.png");

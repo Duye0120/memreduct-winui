@@ -86,8 +86,18 @@
                                 <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="224" /></Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                                 <StackPanel x:Name="PhysicalCell" Padding="16">
-                                    <TextBlock x:Uid="PhysicalUsageLabel" Style="{StaticResource OverviewMuted}" Text="物理内存使用率" FontWeight="SemiBold" />
-                                    <TextBlock x:Name="PhysicalValue" Text="—" Style="{StaticResource OverviewReading}" Margin="0,4,0,12" />
+                                    <Grid ColumnSpacing="16" Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock x:Uid="PhysicalUsageLabel" Style="{StaticResource OverviewMuted}" Text="物理内存使用率" FontWeight="SemiBold" />
+                                            <TextBlock x:Name="PhysicalValue" Text="—" Style="{StaticResource OverviewReading}" Margin="0,4,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                            <TextBlock x:Uid="LastFreedLabel" Text="上次释放" Style="{StaticResource OverviewMuted}" TextAlignment="Right" />
+                                            <TextBlock x:Name="LastCleanupValue" Text="—" Visibility="Collapsed" Style="{StaticResource OverviewBody}" FontWeight="SemiBold" TextAlignment="Right" />
+                                            <TextBlock x:Name="LastCleanupTime" Text="尚未清理" Style="{StaticResource OverviewBody}" TextAlignment="Right" />
+                                        </StackPanel>
+                                    </Grid>
                                     <ProgressBar x:Name="PhysicalBar" Maximum="100" Height="6" MinHeight="6" Background="{ThemeResource MeterTrackBrush}" Foreground="{ThemeResource UsageNormalBrush}" Margin="0,0,0,12">
                                         <ProgressBar.Template><ControlTemplate TargetType="ProgressBar">
                                             <Grid x:Name="LayoutRoot" Height="6"><Border Background="{TemplateBinding Background}" CornerRadius="3" /><Rectangle x:Name="DeterminateProgressBarIndicator" Fill="{TemplateBinding Foreground}" HorizontalAlignment="Left" Height="6" RadiusX="3" RadiusY="3" /></Grid>
@@ -123,11 +133,13 @@
                                                 </Button.Resources>
                                                 <ToolTipService.ToolTip><StackPanel Spacing="8"><TextBlock x:Name="CleanDescription" Text="—" Style="{StaticResource OverviewMuted}" /><TextBlock x:Name="ResultText" Text="—" Style="{StaticResource OverviewMuted}" /></StackPanel></ToolTipService.ToolTip>
                                             </Button>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Center">
-                                            <TextBlock x:Uid="LastFreedLabel" Text="上次释放" Style="{StaticResource OverviewMuted}" TextAlignment="Center" />
-                                            <TextBlock x:Name="LastCleanupValue" Text="—" Visibility="Collapsed" Style="{StaticResource OverviewBody}" FontWeight="SemiBold" TextAlignment="Center" />
-                                            <TextBlock x:Name="LastCleanupTime" Text="尚未清理" Style="{StaticResource OverviewBody}" TextAlignment="Center" />
-                                        </StackPanel>
+                                        <Grid ColumnSpacing="12" MinHeight="32">
+                                            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <TextBlock x:Uid="ManualGameModeLabel" Text="游戏模式" Style="{StaticResource OverviewBody}" VerticalAlignment="Center" />
+                                            <ToggleSwitch x:Name="ManualGameSwitch" x:Uid="ManualGameSwitch" Grid.Column="1" MinWidth="0" OnContent="" OffContent="" AutomationProperties.Name="游戏模式" Toggled="ManualGameSwitch_Toggled">
+                                                <ToolTipService.ToolTip><TextBlock x:Uid="ManualGameHint" Text="开启时整理低优先级缓存，暂停自动清理，直到手动关闭。" /></ToolTipService.ToolTip>
+                                            </ToggleSwitch>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
                             </Grid>
