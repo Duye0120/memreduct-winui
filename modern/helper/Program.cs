@@ -92,6 +92,11 @@ internal static class Program
         var result = HelperProtocol.ParseResponse(HelperProtocol.Response(original));
         if (result.FreedBytes != 123 || result.Errors[0] != original.Errors[0] || result.CompletedAreas != original.CompletedAreas) throw new Exception("Protocol round trip failed.");
         var sid = "S-1-5-21-1-2-3-1001";
+        var setup = HelperUpdates.CreateSetupStartInfo(@"C:\Program Files\MemReduct Helper\Updates\setup.exe", @"D:\Apps\内存工具");
+        if (setup.FileName != @"C:\Program Files\MemReduct Helper\Updates\setup.exe"
+            || setup.Arguments != "/SP- /SILENT /NORESTART /FROMAPP=1 /DIR=\"D:\\Apps\\内存工具\""
+            || !setup.UseShellExecute || setup.WorkingDirectory != HelperTrust.DirectoryPath)
+            throw new Exception("In-app setup must skip wizard pages, preserve the directory and never reboot Windows.");
         if (!HelperTasks.Matches(HelperTasks.CreateXml(sid, false), sid) || !HelperTasks.Matches(HelperTasks.CreateXml(sid, true), sid)) throw new Exception("Task contract failed.");
         var payload = System.Text.Encoding.UTF8.GetBytes("verified update fixture");
         string digest;

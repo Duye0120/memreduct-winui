@@ -101,9 +101,15 @@ namespace MemReduct.Fluent
             File.Move(partial, target);
             HelperTrust.CheckPath(new FileInfo(target), false);
             // Setup is elevated, but its finish/cancel hook reopens the UI with the ordinary shell token.
-            using (var process = Process.Start(new ProcessStartInfo(target, "/FROMAPP=1 /DIR=\"" + installation + "\"")
-                { UseShellExecute = true, WorkingDirectory = HelperTrust.DirectoryPath }))
+            using (var process = Process.Start(CreateSetupStartInfo(target, installation)))
                 if (process == null) throw new InvalidOperationException(UiText.Get("UpdateFailed"));
+        }
+
+        internal static ProcessStartInfo CreateSetupStartInfo(string installer, string installation)
+        {
+            // Keep progress, cancellation and error dialogs; never allow setup to reboot Windows.
+            return new ProcessStartInfo(installer, "/SP- /SILENT /NORESTART /FROMAPP=1 /DIR=\"" + installation + "\"")
+                { UseShellExecute = true, WorkingDirectory = HelperTrust.DirectoryPath };
         }
     }
 }
