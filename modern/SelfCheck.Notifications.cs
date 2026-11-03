@@ -23,6 +23,18 @@ public sealed partial class MainWindow
         var shortcutPath = Path.Combine(shortcutDirectory, "Mem Reduct.lnk");
         try
         {
+            var diagnosticError = new System.ComponentModel.Win32Exception(1462);
+            diagnosticError.Data["Operation"] = "notification diagnostic fixture";
+            App.RecordFailure(diagnosticError, notification: true);
+            var diagnostic = File.ReadAllText(Path.Combine(directory, "notification-error.log"));
+            Require(diagnostic.Contains("NativeErrorCode=1462") && diagnostic.Contains("notification diagnostic fixture"),
+                "Notification diagnostics preserve the native error and operation in the isolated check directory");
+            diagnosticError.Data["Unicode"] = new string('中', 65536);
+            App.RecordFailure(diagnosticError, notification: true);
+            var diagnosticBytes = File.ReadAllBytes(Path.Combine(directory, "notification-error.log"));
+            Require(diagnosticBytes.Length <= 65536
+                && new System.Text.UTF8Encoding(false, true).GetString(diagnosticBytes).Contains("NativeErrorCode=1462"),
+                "Diagnostic files stay within 64 KiB without splitting UTF-8 characters");
             CheckNotificationPayload();
             NotificationShortcut.CheckReadOnlyShortcuts(directory, applicationId);
             NotificationShortcut.Ensure(shortcutPath, applicationId);

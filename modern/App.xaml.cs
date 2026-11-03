@@ -13,19 +13,42 @@ public partial class App : Application
     internal static string[] Arguments => Environment.GetCommandLineArgs();
     public App()
     {
-        UnhandledException += (_, args) => RecordCheckFailure(args.Exception);
+        UnhandledException += (_, args) => RecordFailure(args.Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            if (args.ExceptionObject is Exception error) RecordFailure(error);
+        };
         try { InitializeComponent(); }
-        catch (Exception error) { RecordCheckFailure(error); throw; }
+        catch (Exception error) { RecordFailure(error); throw; }
     }
 
-    private static void RecordCheckFailure(Exception error)
+    internal static void RecordFailure(Exception error, bool notification = false)
     {
         var index = Array.IndexOf(Arguments, "--self-check");
-        if (index < 0 || index + 1 >= Arguments.Length) return;
-        var directory = Path.GetFullPath(Arguments[index + 1]);
-        Directory.CreateDirectory(directory);
-        File.WriteAllText(Path.Combine(directory, "self-check.json"),
-            System.Text.Json.JsonSerializer.Serialize(new { passed = false, error = error.ToString() }));
+        try
+        {
+            UserDataAccess.Run(() =>
+            {
+                var checking = index >= 0 && index + 1 < Arguments.Length;
+                var directory = checking ? Path.GetFullPath(Arguments[index + 1])
+                    : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MemReductFluent");
+                Directory.CreateDirectory(directory);
+                if (checking && !notification)
+                    File.WriteAllText(Path.Combine(directory, "self-check.json"),
+                        System.Text.Json.JsonSerializer.Serialize(new { passed = false, error = error.ToString() }));
+                else
+                {
+                    var details = $"{DateTimeOffset.Now:O}\nVersion={typeof(App).Assembly.GetName().Version}\n{error}\n";
+                    if (error is System.ComponentModel.Win32Exception native) details += $"NativeErrorCode={native.NativeErrorCode}\n";
+                    foreach (System.Collections.DictionaryEntry entry in error.Data) details += $"{entry.Key}={entry.Value}\n";
+                    // Keep only the latest failure of each kind; diagnostics must not grow indefinitely.
+                    var buffer = new byte[65536];
+                    System.Text.Encoding.UTF8.GetEncoder().Convert(details.AsSpan(), buffer, true, out _, out var used, out _);
+                    File.WriteAllBytes(Path.Combine(directory, notification ? "notification-error.log" : "crash.log"), buffer.AsSpan(0, used));
+                }
+            });
+        }
+        catch { /* Recording an exception must never replace the original failure. */ }
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
@@ -78,6 +101,7 @@ public partial class App : Application
         }
         catch (Exception error)
         {
+            RecordFailure(error);
             if (!Arguments.Contains("--self-check") && !Arguments.Contains("--configure-startup") && !Arguments.Contains(ElevationHandoff.Argument))
                 MessageBox(IntPtr.Zero, error.Message + "\n" + UiText.Get("OriginalUntouched"), "Mem Reduct Fluent", 0x10);
             else if (Arguments.Contains("--self-check"))

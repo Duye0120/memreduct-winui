@@ -129,7 +129,16 @@ internal sealed class TrayIcon : IDisposable
             if (_notificationIcon == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
         }
         var notification = BuildSuccessNotification(_data, freed, _notificationIcon);
-        if (!Shell_NotifyIcon(1, ref notification)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if (!Shell_NotifyIcon(1, ref notification))
+        {
+            var error = new Win32Exception(Marshal.GetLastWin32Error());
+            error.Data["Operation"] = "Shell_NotifyIconW(NIM_MODIFY)";
+            error.Data["Size"] = notification.Size;
+            error.Data["Flags"] = notification.Flags;
+            error.Data["InfoFlags"] = notification.InfoFlags;
+            error.Data["TrayAdded"] = _added;
+            throw error;
+        }
     }
 
     internal static NotifyIconData BuildSuccessNotification(NotifyIconData data, string freed, IntPtr icon)
