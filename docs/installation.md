@@ -16,6 +16,15 @@
 
 安装身份读取 HKLM 64 位卸载项 `{5B9D5C89-F01C-4AB6-A593-DA69B3835832}_is1` 的 `InstallLocation`，不读取用户可写的路径标记。设置位置不随安装目录移动。助手目录、文件和祖先必须通过 ACL、所有者及非链接检查；D 盘 UI 的文件不进入清理或更新提权入口。0.0.7 起可写的主程序目录也支持应用内更新；0.0.6 及以下的旧程序需先手动覆盖安装一次修复版。安装器仅收紧自己的固定助手目录，绝不修改 `D:\apps` 或其他父目录 ACL。
 
+### 0.0.19 本地错误诊断
+
+2026-11-03 按用户授权发布 [v0.0.19](https://github.com/Duye0120/memreduct-winui/releases/tag/v0.0.19) 并设为 Latest，源码标签与包内产品版本对应 `c7cfa140be29c9ece452054d3edfb45754acf372`。中文更新日志见 [0.0.19](release-notes-0.0.19.md)。本版新增错误记录，尚未确认修复锁屏后退出、通知“参数大小错误”或开始搜索不可用的根因。
+
+- 安装包位于 `D:\apps\MemReduct Fluent\MemReductFluent-0.0.19-win-x64-setup.exe`，46,351,401 字节，SHA-256 为 `1c9fdb859380e431770def87f543a1437d5f87027b9f88fbed4511b6680eb448`。两项附件服务端 digest、大小与本地一致，公开安装包 HEAD 为 200，公开校验文件一致，匿名 latest API 返回 `v0.0.19`。
+- 正式暂存助手自检及通知诊断专项通过；覆盖错误码/操作保留、长中文日志不超过 64 KiB 且 UTF-8 完整、Windows 通知身份名称及实际系统投递。未重跑与本次诊断改动无关的完整 UI 自检。已安装助手和新助手的共享解析器均能从公开发布列表为 0.0.18 选中 0.0.19 的精确包、大小与哈希，当前版本为 0.0.19 时跳过更新。
+- 安装版、便携预览设置在打包/发布核对时哈希一致，未执行实际清理、UAC 或覆盖安装。证据在仓库外 `work/installer-0.0.19-release.log`、`work/release-0.0.19-notifications-zh-CN`、`work/release-0.0.19-update-verification.json` 和 `work/release-0.0.19-public-verification.json`。
+- 安装后将可捕获的未处理异常记到 `%LOCALAPPDATA%\MemReductFluent\crash.log`，通知异常记到同目录的 `notification-error.log`。仅按类别保留最近一次，不滚动记录故障前 10 分钟，不自动上传日志，也无法保证记录系统强制终止或原生 fail-fast。
+
 ### 0.0.18 应用内静默更新
 
 2026-10-31 按用户要求，将 `v0.0.18` 设为 GitHub 最新版；公开 `/releases/latest` 已核对返回 `v0.0.18`。停止固定旧更新器兼容入口，后续标准正式发布正常设为 latest，历史发布与附件保留。
